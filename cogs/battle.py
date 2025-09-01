@@ -84,9 +84,19 @@ class Battle(commands.Cog):
             
             # Check if this is first-time completion for NPC battle
             if challenger_id > 0:  # Only for real players
-                # This logic is now handled by the gym cog checking the user's badge count.
-                # We can determine if it's a first-time battle there.
-                is_first_completion = True # Placeholder, gym cog will have the real logic
+                npc_type = abs(opponent_id) // 1000  # 1=gym, 2=elite4, 3=champion
+                npc_index = abs(opponent_id) % 1000
+
+                try:
+                    # Check existing completion
+                    existing = await self.bot.db.fetchval(
+                        "SELECT 1 FROM npc_completions WHERE user_id = $1 AND npc_type = $2 AND npc_index = $3",
+                        challenger_id, npc_type, npc_index
+                    )
+                    is_first_completion = existing is None
+                except:
+                    # Table might not exist, assume first completion
+                    is_first_completion = True
         
         # Get full parties
         challenger_party = await self.bot.db.get_user_pokemon(challenger_id, in_party=True)
@@ -1110,9 +1120,17 @@ class Battle(commands.Cog):
                 
         # Record NPC battle completion for first-time tracking
         elif challenger_id > 0 and opponent_id < 0 and battle_data.get('is_first_completion'):
-            # This logic was incorrect. NPC completion is tracked by the `users.badges` column.
-            # The calling function `_handle_gym_victory` in the gym cog handles incrementing the badge count.
-            pass
+            npc_type = abs(opponent_id) // 1000
+            npc_index = abs(opponent_id) % 1000
+            try:
+                await self.bot.db.execute(
+                    """INSERT INTO npc_completions (user_id, npc_type, npc_index, completed_at)
+                       VALUES ($1, $2, $3, NOW()) ON CONFLICT DO NOTHING""",
+                    challenger_id, npc_type, npc_index
+                )
+            except Exception as e:
+                import logging
+                logging.info(f"NPC completion tracking failed (table may not exist): {e}")
             
         # Remove from active battles
 
@@ -1244,30 +1262,19 @@ class BattleMoveView(discord.ui.View):
                 return
 
             battle_cog = self.bot.get_cog('Battle')
-
-            # --- The Fix for UI Spam and Stale Data ---
-            # 1. Disable the view on the message that was just clicked
-            if self.message:
-                try:
-                    view = discord.ui.View.from_message(self.message)
-                    for item in view.children:
-                        item.disabled = True
-                    await self.message.edit(view=view)
-                except (discord.errors.NotFound, AttributeError):
-                    pass # Ignore if message was deleted or view is gone
-
-            # 2. Defer the interaction to acknowledge it
-            await interaction.response.defer()
-
-            # 3. Execute the move logic, which mutates the battle_data dictionary
             result = await battle_cog.use_move(self.battle_data, self.user_id, move_name)
 
-            # 4. Send the text result of the move
-            await interaction.followup.send(result)
+            await interaction.response.send_message(result)
 
-            # 5. If the battle is still active, send a new status embed with new buttons
+            # Check if battle still exists (may have ended during move execution)
+            if self.user_id not in battle_cog.active_battles:
+                return
+
+            # Small delay to ensure message order
+            await asyncio.sleep(0.1)
+
+            # Only continue if battle still exists and has a valid turn
             if self.user_id in battle_cog.active_battles and self.battle_data.get('turn') is not None:
-                await asyncio.sleep(0.1)
                 await battle_cog._send_battle_status(self.battle_data)
 
         return callback
