@@ -3938,3 +3938,13 @@ DETAIL:  Key (opponent_id)=(-1000) is not present in table "users".
 2025-09-01 06:06:03,198 - discord.client - INFO - logging in using static token
 2025-09-01 06:06:05,642 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 5e7fe8d8fccd34b016f4c9d9a581e523).
 2025-09-01 06:09:37,099 - root - INFO - NPC completion tracking failed (table may not exist): relation "npc_completions" does not exist
+2025-09-01 06:11:40,343 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-01 06:11:40,344 - discord.client - INFO - logging in using static token
+2025-09-01 06:11:42,707 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 385805038813ed26fd2b0b590eb1e1ee).
+2025-09-01 06:16:19,548 - root - INFO - NPC completion tracking failed (table may not exist): relation "npc_completions" does not exist
+2025-09-01 06:26:04,371 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-01 06:26:04,372 - discord.client - INFO - logging in using static token
+2025-09-01 06:26:06,864 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 3a3730759996359fa2f24e8318a12c2f).
+2025-09-01 06:34:39,077 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-01 06:34:39,078 - discord.client - INFO - logging in using static token
+2025-09-01 06:34:41,479 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: e55af9d3b0e430c7e6fed2bc39263a77).

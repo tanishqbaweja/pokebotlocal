@@ -375,7 +375,7 @@ class Battle(commands.Cog):
                         defender_data['substitute'] = 0
                         
                         result_text += f"\n<@{defender_data['id']}> sent out {next_pokemon['name']}!"
-                        # Don't change turn - let normal turn switching handle it
+                        # Keep turn with same player when Pokemon faints (forced switch)
                         return result_text
             
         # Apply end-of-turn status effects
@@ -402,8 +402,9 @@ class Battle(commands.Cog):
                         defender_data['pokemon']['current_hp'], defender_data['pokemon']['id']
                     )
                 
-        # Switch turns
-        battle_data['turn'] = defender_data['id']
+        # Switch turns (only if no Pokemon fainted)
+        if defender_data['pokemon']['current_hp'] > 0:
+            battle_data['turn'] = defender_data['id']
         return result_text
         
     async def _handle_status_move(self, battle_data, attacker_data, defender_data, move_name):
@@ -1302,6 +1303,7 @@ class PokemonSwitchView(discord.ui.View):
                 battle_cog = self.bot.get_cog('Battle')
                 await battle_cog._send_battle_status(self.battle_data)
             else:
+                # Voluntary switch - give turn to opponent
                 other_user_id = self.battle_data['opponent']['id'] if self.user_id == self.battle_data['challenger']['id'] else self.battle_data['challenger']['id']
                 self.battle_data['turn'] = other_user_id
                 await interaction.response.send_message(f"Switched to {species['name']}!")
