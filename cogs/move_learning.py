@@ -17,9 +17,9 @@ class MoveLearning(commands.Cog):
             self.levelup_moves = {}
             
     @commands.Cog.listener()
-    async def on_pokemon_level_up(self, pokemon, old_level, new_level, channel_id=None):
-        pokemon_id = pokemon['id']
+    async def on_pokemon_level_up(self, pokemon_id, old_level, new_level):
         # Check for moves learned between old_level and new_level
+        pokemon = await self.bot.db.fetchrow("SELECT * FROM pokemon WHERE id = $1", pokemon_id)
         if not pokemon:
             return
             
@@ -52,8 +52,6 @@ class MoveLearning(commands.Cog):
         current_moves = [pokemon['move1'], pokemon['move2'], pokemon['move3'], pokemon['move4']]
         current_moves = [move for move in current_moves if move]
         
-        channel = self.bot.get_channel(channel_id) if channel_id else None
-
         for new_move in moves_to_learn:
             if new_move in current_moves:
                 continue  # Already knows this move
@@ -71,14 +69,18 @@ class MoveLearning(commands.Cog):
                 )
                 current_moves.append(new_move)
                 
-                # Notify user of automatic learning in the channel
-                if channel:
-                    embed = discord.Embed(
-                        title="Move Learned!",
-                        description=f"<@{pokemon['owner_id']}>'s {species_name} learned **{new_move.replace('_', ' ').title()}**!",
-                        color=0x00ff00
-                    )
-                    await channel.send(embed=embed)
+                # Notify user of automatic learning
+                try:
+                    user_obj = self.bot.get_user(pokemon['owner_id'])
+                    if user_obj:
+                        embed = discord.Embed(
+                            title="Move Learned!",
+                            description=f"Your {species_name} learned **{new_move.replace('_', ' ').title()}**!",
+                            color=0x00ff00
+                        )
+                        await user_obj.send(embed=embed)
+                except:
+                    pass
             else:
                 # Need to replace a move - add to pending
                 self.pending_moves[pokemon['owner_id']] = {
@@ -88,18 +90,22 @@ class MoveLearning(commands.Cog):
                     'species_name': species_name
                 }
                 
-                # Notify user they need to choose in the channel
-                if channel:
-                    current_move_list = "\n".join([f"• {move.replace('_', ' ').title()}" for move in current_moves])
-                    embed = discord.Embed(
-                        title="🎓 Move Learning Choice Required!",
-                        description=f"{channel.guild.get_member(pokemon['owner_id']).mention}, your **{species_name}** wants to learn **{new_move.replace('_', ' ').title()}**!\n\n"
-                                  f"**Current Moves:**\n{current_move_list}\n\n"
-                                  f"Use `/choosemove` to decide which move to replace, or `/forgetmove` to skip learning this move.\n\n"
-                                  f"⚠️ **You cannot battle or trade until you make this decision!**",
-                        color=0xffa500
-                    )
-                    await channel.send(embed=embed)
+                # Notify user they need to choose
+                try:
+                    user_obj = self.bot.get_user(pokemon['owner_id'])
+                    if user_obj:
+                        current_move_list = "\n".join([f"• {move.replace('_', ' ').title()}" for move in current_moves])
+                        embed = discord.Embed(
+                            title="🎓 Move Learning Choice Required!",
+                            description=f"Your **{species_name}** wants to learn **{new_move.replace('_', ' ').title()}**!\n\n"
+                                      f"**Current Moves:**\n{current_move_list}\n\n"
+                                      f"Use `/choosemove` to decide which move to replace, or `/forgetmove` to skip learning this move.\n\n"
+                                      f"⚠️ **You cannot battle or trade until you make this decision!**",
+                            color=0xffa500
+                        )
+                        await user_obj.send(embed=embed)
+                except:
+                    pass
                     
     @commands.hybrid_command(name="choosemove", description="Choose which move to replace when learning a new move")
     async def choose_move(self, ctx):

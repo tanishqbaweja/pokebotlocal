@@ -1,4 +1,5 @@
 import asyncpg
+import asyncio
 
 class Database:
     def __init__(self, database_url):
@@ -24,6 +25,12 @@ class Database:
         async with self.pool.acquire() as conn:
             return await conn.fetchval(query, *args)
             
+    async def create_user(self, user_id, username):
+        await self.execute(
+            "INSERT INTO users (user_id, username) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING",
+            user_id, username
+        )
+
     async def get_user(self, user_id):
         return await self.fetchrow("SELECT * FROM users WHERE user_id = $1", user_id)
         
@@ -73,7 +80,7 @@ class Database:
         party_position = party_count + 1 if in_party else None
         
         # Get appropriate moves for the Pokemon's level
-        moves = self.get_moves_for_level(species_id, level)
+        moves = self._get_moves_for_level(species_id, level)
         
         return await self.fetchval(
             """INSERT INTO pokemon (owner_id, species_id, level, hp_iv, attack_iv, 
@@ -85,15 +92,16 @@ class Database:
             moves[0], moves[1], moves[2], moves[3]
         )
         
-    def get_moves_for_level(self, species_id, level):
-        """Get appropriate moves for a Pokemon at a specific level, used for initial creation."""
+    def _get_moves_for_level(self, species_id, level):
+        """Get appropriate moves for a Pokemon at a specific level"""
+        from data.complete_moves_data import LEVEL_MOVESETS
         from data.complete_pokemon_data import COMPLETE_POKEMON_DATA
         import json
         
         moves = [None, None, None, None]
         learned_moves = []
         
-        # Try to load from levelup_moves.json
+        # Try to load from levelup_moves.json first
         try:
             with open('levelup_moves.json', 'r') as f:
                 levelup_data = json.load(f)
@@ -102,35 +110,53 @@ class Database:
             if pokemon_data:
                 species_name = pokemon_data['name']
                 if species_name in levelup_data:
-                    for learn_level_str, move_or_moves in levelup_data[species_name].items():
+                    for learn_level_str in levelup_data[species_name]:
                         learn_level = int(learn_level_str)
                         if learn_level <= level:
-                            move_list = move_or_moves if isinstance(move_or_moves, list) else [move_or_moves]
-                            converted_moves = [move.lower().replace(' ', '_').replace('-', '_') for move in move_list]
-                            learned_moves.extend(converted_moves)
+                            move_list = levelup_data[species_name][learn_level_str]
+                            if isinstance(move_list, list):
+                                # Convert move names to lowercase with underscores
+                                converted_moves = [move.lower().replace(' ', '_').replace('-', '_') for move in move_list]
+                                learned_moves.extend(converted_moves)
+                            else:
+                                converted_move = move_list.lower().replace(' ', '_').replace('-', '_')
+                                learned_moves.append(converted_move)
         except (FileNotFoundError, json.JSONDecodeError, KeyError):
-            # This block can serve as a log or a fallback if the JSON is ever missing.
-            # For now, we rely on the JSON being present.
-            pass
+            # Fallback to LEVEL_MOVESETS if JSON loading fails
+            if species_id in LEVEL_MOVESETS:
+                for learn_level in sorted(LEVEL_MOVESETS[species_id].keys()):
+                    if learn_level <= level:
+                        move_list = LEVEL_MOVESETS[species_id][learn_level]
+                        if isinstance(move_list, list):
+                            learned_moves.extend(move_list)
+                        else:
+                            learned_moves.append(move_list)
 
-        # If no moves found from JSON, or not enough, add type-appropriate moves as a fallback.
-        type_moves_map = {
-            'fire': ['ember', 'tackle', 'leer', 'flamethrower'],
-            'water': ['water_gun', 'tackle', 'bubble', 'surf'],
-            'grass': ['vine_whip', 'tackle', 'absorb', 'razor_leaf'],
-            'electric': ['thundershock', 'tackle', 'thunder_wave', 'thunderbolt'],
-            'psychic': ['confusion', 'teleport', 'psybeam', 'psychic'],
-            'fighting': ['karate_chop', 'leer', 'seismic_toss', 'submission'],
-            'poison': ['poison_sting', 'tackle', 'acid', 'sludge'],
-            'ground': ['scratch', 'sand_attack', 'dig', 'earthquake'],
-            'flying': ['peck', 'gust', 'wing_attack', 'drill_peck'],
-            'bug': ['string_shot', 'tackle', 'leech_life', 'pin_missile'],
-            'rock': ['rock_throw', 'tackle', 'harden', 'rock_slide'],
-            'ghost': ['lick', 'confuse_ray', 'night_shade', 'dream_eater'],
-            'ice': ['tackle', 'leer', 'ice_beam', 'blizzard'],
-            'dragon': ['dragon_rage', 'leer', 'slam', 'hyper_beam'],
-            'normal': ['tackle', 'growl', 'quick_attack', 'body_slam']
-        }
+        # If no moves found or not enough moves, add type-appropriate moves
+        if not learned_moves:
+            pokemon_data = COMPLETE_POKEMON_DATA[species_id]
+            type1 = pokemon_data['type1'].lower()
+
+            # Give type-appropriate moves based on Pokemon type
+            type_moves = {
+                'fire': ['ember', 'tackle', 'leer', 'flamethrower'],
+                'water': ['water_gun', 'tackle', 'bubble', 'surf'],
+                'grass': ['vine_whip', 'tackle', 'absorb', 'razor_leaf'],
+                'electric': ['thundershock', 'tackle', 'thunder_wave', 'thunderbolt'],
+                'psychic': ['confusion', 'teleport', 'psybeam', 'psychic'],
+                'fighting': ['karate_chop', 'leer', 'seismic_toss', 'submission'],
+                'poison': ['poison_sting', 'tackle', 'acid', 'sludge'],
+                'ground': ['scratch', 'sand_attack', 'dig', 'earthquake'],
+                'flying': ['peck', 'gust', 'wing_attack', 'drill_peck'],
+                'bug': ['string_shot', 'tackle', 'leech_life', 'pin_missile'],
+                'rock': ['rock_throw', 'tackle', 'harden', 'rock_slide'],
+                'ghost': ['lick', 'confuse_ray', 'night_shade', 'dream_eater'],
+                'ice': ['tackle', 'leer', 'ice_beam', 'blizzard'],
+                'dragon': ['dragon_rage', 'leer', 'slam', 'hyper_beam'],
+                'normal': ['tackle', 'growl', 'quick_attack', 'body_slam']
+            }
+
+            learned_moves = type_moves.get(type1, type_moves['normal'])
 
         # Determine number of moves based on level
         if level >= 20:
@@ -144,7 +170,26 @@ class Database:
         if len(learned_moves) < num_moves:
             pokemon_data = COMPLETE_POKEMON_DATA[species_id]
             type1 = pokemon_data['type1'].lower()
-            fallback_moves = type_moves_map.get(type1, type_moves_map['normal'])
+            type_moves = {
+                'fire': ['ember', 'tackle', 'leer', 'flamethrower'],
+                'water': ['water_gun', 'tackle', 'bubble', 'surf'],
+                'grass': ['vine_whip', 'tackle', 'absorb', 'razor_leaf'],
+                'electric': ['thundershock', 'tackle', 'thunder_wave', 'thunderbolt'],
+                'psychic': ['confusion', 'teleport', 'psybeam', 'psychic'],
+                'fighting': ['karate_chop', 'leer', 'seismic_toss', 'submission'],
+                'poison': ['poison_sting', 'tackle', 'acid', 'sludge'],
+                'ground': ['scratch', 'sand_attack', 'dig', 'earthquake'],
+                'flying': ['peck', 'gust', 'wing_attack', 'drill_peck'],
+                'bug': ['string_shot', 'tackle', 'leech_life', 'pin_missile'],
+                'rock': ['rock_throw', 'tackle', 'harden', 'rock_slide'],
+                'ghost': ['lick', 'confuse_ray', 'night_shade', 'dream_eater'],
+                'ice': ['tackle', 'leer', 'ice_beam', 'blizzard'],
+                'dragon': ['dragon_rage', 'leer', 'slam', 'hyper_beam'],
+                'normal': ['tackle', 'growl', 'quick_attack', 'body_slam']
+            }
+
+            fallback_moves = type_moves.get(type1, type_moves['normal'])
+            # Add fallback moves until we have enough
             for move in fallback_moves:
                 if move not in learned_moves:
                     learned_moves.append(move)
@@ -152,11 +197,15 @@ class Database:
                         break
             
         # Take the most recent moves up to the limit
-        recent_moves = learned_moves[-num_moves:]
+        recent_moves = learned_moves[-num_moves:] if len(learned_moves) >= num_moves else learned_moves
         
         # Fill moves array
         for i, move in enumerate(recent_moves):
-            if i < 4:
+            if i < 4:  # Safety check
                 moves[i] = move
                 
         return moves
+
+    def get_moves_for_level(self, species_id, level):
+        """Public method to get moves for gym/elite four Pokemon"""
+        return self._get_moves_for_level(species_id, level)

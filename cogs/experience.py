@@ -87,8 +87,20 @@ class Experience(commands.Cog):
             if message_channel:
                 await message_channel.send(f"🎉 **{species_name}** leveled up to level **{new_level}**!")
             
+            # Check for evolution using proper evolution mapping
+            species = POKEMON_DATA[pokemon_dict['species_id']]
+            if 'evolves_at' in species and new_level >= species['evolves_at']:
+                evolution_cog = self.bot.get_cog('Evolution')
+                if evolution_cog and hasattr(evolution_cog, 'evolution_map'):
+                    evolved_species_id = evolution_cog.evolution_map.get(pokemon_dict['species_id'])
+                    if evolved_species_id and evolved_species_id in POKEMON_DATA:
+                        await evolution_cog._evolve_pokemon(pokemon_dict)
+                        if message_channel:
+                            evo_species = POKEMON_DATA[evolved_species_id]
+                            await message_channel.send(f"🎆 **{species_name}** evolved into **{evo_species['name']}**!")
+
             # Trigger evolution and move learning events
-            self.bot.dispatch('pokemon_level_up', pokemon_dict, current_level, new_level, message_channel.id if message_channel else None)
+            self.bot.dispatch('pokemon_level_up', pokemon_dict['id'], current_level, new_level)
             
     async def _handle_level_up(self, pokemon, old_level, new_level):
         # Recalculate HP
