@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 from data.complete_pokemon_data import COMPLETE_POKEMON_DATA
 
 class Evolution(commands.Cog):
