@@ -186,16 +186,17 @@ class Spawn(commands.Cog):
         }
         
     @commands.hybrid_command(name="catch", description="Attempt to catch the spawned Pokemon")
-    @app_commands.describe(pokeball="Choose a pokeball type")
-    @app_commands.choices(pokeball=[
-        app_commands.Choice(name="Pokeball", value="pokeball"),
-        app_commands.Choice(name="Great Ball", value="greatball"),
-        app_commands.Choice(name="Ultra Ball", value="ultraball"),
-        app_commands.Choice(name="Master Ball", value="masterball")
-    ])
+    @app_commands.describe(pokeball="Choose a pokeball type (optional, uses your default if not specified)")
     async def catch(self, ctx, pokeball: str = None):
         guild_id = ctx.guild.id
         user_id = ctx.author.id
+
+        # Rate Limiter Check
+        rate_limiter = self.bot.get_cog('RateLimiter')
+        if rate_limiter and rate_limiter.is_rate_limited(user_id, 'catch'):
+            cooldown = rate_limiter.get_cooldown_time(user_id, 'catch')
+            await ctx.send(f"You're catching too fast! Try again in {cooldown:.1f} seconds.", ephemeral=True)
+            return
         
         # Check if there's an active spawn in this channel
         if guild_id not in self.active_spawns or ctx.channel.id not in self.active_spawns[guild_id]:

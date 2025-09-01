@@ -41,43 +41,100 @@ class Shop(commands.Cog):
         }
         
     @app_commands.command(name="shop", description="View the Pokemon shop")
-    async def shop(self, interaction: discord.Interaction):
-        embed = discord.Embed(title="Pokemon Shop", color=0x3498db)
-        
-        # Basic items only (under 25 field limit)
-        basic_items = {
-            "pokeball": self.shop_items["pokeball"],
-            "greatball": self.shop_items["greatball"], 
-            "ultraball": self.shop_items["ultraball"],
-            "masterball": self.shop_items["masterball"],
-            "potion": self.shop_items["potion"],
-            "super_potion": self.shop_items["super_potion"],
-            "hyper_potion": self.shop_items["hyper_potion"],
-            "rare_candy": self.shop_items["rare_candy"],
-            "antidote": self.shop_items["antidote"],
-            "revive": self.shop_items["revive"]
-        }
-        
-        for item, data in basic_items.items():
+    async def shop(self, interaction: discord.Interaction, page: int = 1):
+        items_per_page = 12
+        item_list = list(self.shop_items.items())
+        total_pages = math.ceil(len(item_list) / items_per_page)
+        page = max(1, min(page, total_pages))
+
+        start_index = (page - 1) * items_per_page
+        end_index = start_index + items_per_page
+        page_items = item_list[start_index:end_index]
+
+        embed = discord.Embed(
+            title=f"Pokémon Shop - Page {page}/{total_pages}",
+            color=0x3498db
+        )
+
+        for item_name, data in page_items:
             embed.add_field(
-                name=f"{item.replace('_', ' ').title()}",
+                name=f"{item_name.replace('_', ' ').title()}",
                 value=f"{data['description']}\n💰 {data['price']:,} rupees",
                 inline=True
             )
-            
-        embed.add_field(
-            name="TMs & HMs", 
-            value="TM01-TM50: 3000-7500 rupees\nHM01-HM05: 10000 rupees\nUse /buy tm01 or /buy hm01",
-            inline=False
-        )
-            
+
         embed.set_footer(text="Use /buy [item] [quantity] to purchase items")
+
+        view = ShopView(self.shop_items, page, total_pages)
+        await interaction.response.send_message(embed=embed, view=view)
+
+    @app_commands.command(name="sell", description="Sell items to the shop")
+    async def sell(self, interaction: discord.Interaction, item: str, quantity: int = 1):
+        user_id = interaction.user.id
+        item = item.lower().replace(' ', '_')
+
+        if item not in self.shop_items:
+            await interaction.response.send_message("Item not found in shop!", ephemeral=True)
+            return
+            
+        if quantity <= 0:
+            await interaction.response.send_message("Quantity must be positive!", ephemeral=True)
+            return
+
+        # Check if user has the item
+        user_item = await self.bot.db.fetchrow(
+            "SELECT quantity FROM user_inventory WHERE user_id = $1 AND item_name = $2",
+            user_id, item
+        )
+
+        if not user_item or user_item['quantity'] < quantity:
+            await interaction.response.send_message(f"You don't have {quantity}x {item.replace('_', ' ').title()} to sell.", ephemeral=True)
+            return
+
+        # Calculate sell price (50% of buy price)
+        sell_price = (self.shop_items[item]["price"] // 2) * quantity
+
+        # Process sale
+        try:
+            await self.bot.db.execute("BEGIN")
+
+            # Add money to user
+            await self.bot.db.execute(
+                "UPDATE users SET money = money + $1 WHERE user_id = $2",
+                sell_price, user_id
+            )
+
+            # Remove item from inventory
+            await self.bot.db.execute(
+                "UPDATE user_inventory SET quantity = quantity - $1 WHERE user_id = $2 AND item_name = $3",
+                quantity, user_id, item
+            )
+
+            await self.bot.db.execute("COMMIT")
+
+        except Exception as e:
+            await self.bot.db.execute("ROLLBACK")
+            await interaction.response.send_message(f"An error occurred: {e}", ephemeral=True)
+            return
+
+        embed = discord.Embed(
+            title="Sale Successful!",
+            description=f"Sold {quantity}x {item.replace('_', ' ').title()} for {sell_price:,} rupees",
+            color=0x2ecc71
+        )
         await interaction.response.send_message(embed=embed)
         
     @app_commands.command(name="buy", description="Purchase items from the shop")
     async def buy(self, interaction: discord.Interaction, item: str, quantity: int = 1):
         user_id = interaction.user.id
         item = item.lower().replace(' ', '_')
+
+        # Rate Limiter Check
+        rate_limiter = self.bot.get_cog('RateLimiter')
+        if rate_limiter and rate_limiter.is_rate_limited(user_id, 'buy'):
+            cooldown = rate_limiter.get_cooldown_time(user_id, 'buy')
+            await interaction.response.send_message(f"You're buying too frequently! Try again in {cooldown:.1f} seconds.", ephemeral=True)
+            return
         
         if item not in self.shop_items:
             await interaction.response.send_message("Item not found in shop!", ephemeral=True)
@@ -123,33 +180,37 @@ class Shop(commands.Cog):
         await interaction.response.send_message(embed=embed)
         
     @app_commands.command(name="inventory", description="View your items")
-    async def inventory(self, interaction: discord.Interaction):
+    async def inventory(self, interaction: discord.Interaction, page: int = 1):
         user_id = interaction.user.id
         
         items = await self.bot.db.fetch(
-            "SELECT item_name, quantity FROM user_inventory WHERE user_id = $1 AND quantity > 0",
+            "SELECT item_name, quantity FROM user_inventory WHERE user_id = $1 AND quantity > 0 ORDER BY item_name",
             user_id
         )
         
         if not items:
             await interaction.response.send_message("Your inventory is empty!", ephemeral=True)
             return
+
+        items_per_page = 12
+        total_pages = math.ceil(len(items) / items_per_page)
+        page = max(1, min(page, total_pages))
+
+        start_index = (page - 1) * items_per_page
+        end_index = start_index + items_per_page
+        page_items = items[start_index:end_index]
             
-        embed = discord.Embed(title="Your Inventory", color=0x9b59b6)
+        embed = discord.Embed(title=f"Your Inventory - Page {page}/{total_pages}", color=0x9b59b6)
         
-        # Limit to 24 fields to stay under Discord's 25 field limit
-        items_to_show = items[:24]
-        for item in items_to_show:
+        for item in page_items:
             embed.add_field(
                 name=item['item_name'].replace('_', ' ').title(),
                 value=f"Quantity: {item['quantity']}",
                 inline=True
             )
             
-        if len(items) > 24:
-            embed.set_footer(text=f"Showing first 24 items of {len(items)} total")
-            
-        await interaction.response.send_message(embed=embed)
+        view = InventoryView(user_id, page, total_pages)
+        await interaction.response.send_message(embed=embed, view=view)
         
     @app_commands.command(name="use", description="Use an item on a Pokemon")
     async def use_item(self, interaction: discord.Interaction, item: str, position: int):
@@ -181,16 +242,18 @@ class Shop(commands.Cog):
             return
             
         # Use item
-        result = await self._use_item_on_pokemon(item, pokemon)
+        result_data = await self._use_item_on_pokemon(item, pokemon)
         
-        if result:
-            # Remove item from inventory
-            await self.bot.db.execute(
-                "UPDATE user_inventory SET quantity = quantity - 1 WHERE user_id = $1 AND item_name = $2",
-                user_id, item
-            )
+        if result_data:
+            # If the action was successful, consume the item
+            if result_data.get("success", True): # Default to True for old string-based results
+                await self.bot.db.execute(
+                    "UPDATE user_inventory SET quantity = quantity - 1 WHERE user_id = $1 AND item_name = $2",
+                    user_id, item
+                )
             
-            await interaction.response.send_message(result)
+            message = result_data.get("message") if isinstance(result_data, dict) else result_data
+            await interaction.response.send_message(message)
         else:
             await interaction.response.send_message("Cannot use this item!", ephemeral=True)
             
@@ -235,8 +298,8 @@ class Shop(commands.Cog):
             
         # Status healing items
         elif item in ["antidote", "awakening", "burn_heal", "ice_heal", "paralyze_heal", "pecha_berry", "chesto_berry", "rawst_berry", "aspear_berry", "cheri_berry"]:
-            # Note: This would require status conditions to be stored in the database
-            # For now, return a placeholder message
+            # TODO: This is placeholder logic. A persistent status condition system
+            # is needed in the database for these items to be functional outside of battle.
             status_cures = {
                 "antidote": "poison",
                 "awakening": "sleep", 
@@ -249,7 +312,7 @@ class Shop(commands.Cog):
                 "aspear_berry": "freeze",
                 "cheri_berry": "paralysis"
             }
-            return f"{pokemon['name']} was cured of {status_cures[item]}!"
+            return {"success": True, "message": f"{pokemon['name']} was cured of {status_cures[item]}!"}
             
         # Revival items
         elif item in ["revive", "max_revive", "revival_herb"]:
@@ -281,14 +344,15 @@ class Shop(commands.Cog):
             
         # PP restoration items
         elif item in ["ether", "max_ether", "elixir", "max_elixir"]:
-            # Note: PP system would need to be implemented in database
+            # TODO: This is placeholder logic. A persistent PP tracking system
+            # is needed in the database for these items to be functional.
             pp_restore = {
                 "ether": "10 PP to one move",
                 "max_ether": "all PP to one move", 
                 "elixir": "10 PP to all moves",
                 "max_elixir": "all PP to all moves"
             }
-            return f"{pokemon['name']} restored {pp_restore[item]}!"
+            return {"success": True, "message": f"{pokemon['name']} restored {pp_restore[item]}!"}
             
         # Stat boost items
         elif item in ["x_attack", "x_defend", "x_speed", "x_special", "x_accuracy", "dire_hit", "guard_spec"]:
@@ -305,12 +369,7 @@ class Shop(commands.Cog):
             
         # Evolution stones (would need evolution system integration)
         elif item in ["fire_stone", "water_stone", "thunder_stone", "leaf_stone", "moon_stone"]:
-            # Check if Pokemon can evolve with this stone
-            evolution_cog = self.bot.get_cog('Evolution')
-            if evolution_cog:
-                # This would need stone evolution mapping in evolution system
-                return f"Used {item.replace('_', ' ').title()} on {pokemon['name']}!"
-            return f"Cannot use {item.replace('_', ' ').title()} on {pokemon['name']}!"
+            return {"success": False, "message": f"This item is an evolution stone! Please use the `/evolve` command instead."}
             
         # Rare candies (level up item)
         elif item == "rare_candy":
@@ -448,3 +507,125 @@ class Shop(commands.Cog):
 
 async def setup(bot):
     await bot.add_cog(Shop(bot))
+
+class ShopView(discord.ui.View):
+    def __init__(self, shop_items, current_page, total_pages):
+        super().__init__(timeout=300)
+        self.shop_items = shop_items
+        self.current_page = current_page
+        self.total_pages = total_pages
+
+        if self.current_page > 1:
+            self.add_item(discord.ui.Button(label="<< First", custom_id="first", style=discord.ButtonStyle.secondary))
+            self.add_item(discord.ui.Button(label="< Prev", custom_id="prev", style=discord.ButtonStyle.primary))
+
+        if self.current_page < self.total_pages:
+            self.add_item(discord.ui.Button(label="Next >", custom_id="next", style=discord.ButtonStyle.primary))
+            self.add_item(discord.ui.Button(label="Last >>", custom_id="last", style=discord.ButtonStyle.secondary))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        # This view is public, so no user check is needed
+        return True
+
+    async def update_page(self, interaction: discord.Interaction, page: int):
+        self.current_page = page
+        items_per_page = 12
+        item_list = list(self.shop_items.items())
+        start_index = (page - 1) * items_per_page
+        end_index = start_index + items_per_page
+        page_items = item_list[start_index:end_index]
+
+        embed = discord.Embed(
+            title=f"Pokémon Shop - Page {page}/{self.total_pages}",
+            color=0x3498db
+        )
+
+        for item_name, data in page_items:
+            embed.add_field(
+                name=f"{item_name.replace('_', ' ').title()}",
+                value=f"{data['description']}\n💰 {data['price']:,} rupees",
+                inline=True
+            )
+
+        embed.set_footer(text="Use /buy [item] [quantity] to purchase items")
+        view = ShopView(self.shop_items, self.current_page, self.total_pages)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="<< First", custom_id="first")
+    async def first_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.update_page(interaction, 1)
+
+    @discord.ui.button(label="< Prev", custom_id="prev")
+    async def prev_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.update_page(interaction, self.current_page - 1)
+
+    @discord.ui.button(label="Next >", custom_id="next")
+    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.update_page(interaction, self.current_page + 1)
+
+    @discord.ui.button(label="Last >>", custom_id="last")
+    async def last_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.update_page(interaction, self.total_pages)
+
+class InventoryView(discord.ui.View):
+    def __init__(self, user_id, current_page, total_pages):
+        super().__init__(timeout=300)
+        self.user_id = user_id
+        self.current_page = current_page
+        self.total_pages = total_pages
+
+        if self.current_page > 1:
+            self.add_item(discord.ui.Button(label="<< First", custom_id="first", style=discord.ButtonStyle.secondary))
+            self.add_item(discord.ui.Button(label="< Prev", custom_id="prev", style=discord.ButtonStyle.primary))
+
+        if self.current_page < self.total_pages:
+            self.add_item(discord.ui.Button(label="Next >", custom_id="next", style=discord.ButtonStyle.primary))
+            self.add_item(discord.ui.Button(label="Last >>", custom_id="last", style=discord.ButtonStyle.secondary))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("This is not your inventory!", ephemeral=True)
+            return False
+        return True
+
+    async def update_page(self, interaction: discord.Interaction, page: int):
+        self.current_page = page
+        items_per_page = 12
+        items = await interaction.client.db.fetch(
+            "SELECT item_name, quantity FROM user_inventory WHERE user_id = $1 AND quantity > 0 ORDER BY item_name",
+            self.user_id
+        )
+        start_index = (page - 1) * items_per_page
+        end_index = start_index + items_per_page
+        page_items = items[start_index:end_index]
+
+        embed = discord.Embed(
+            title=f"Your Inventory - Page {page}/{self.total_pages}",
+            color=0x9b59b6
+        )
+
+        for item in page_items:
+            embed.add_field(
+                name=item['item_name'].replace('_', ' ').title(),
+                value=f"Quantity: {item['quantity']}",
+                inline=True
+            )
+
+        view = InventoryView(self.user_id, self.current_page, self.total_pages)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="<< First", custom_id="first")
+    async def first_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.update_page(interaction, 1)
+
+    @discord.ui.button(label="< Prev", custom_id="prev")
+    async def prev_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.update_page(interaction, self.current_page - 1)
+
+    @discord.ui.button(label="Next >", custom_id="next")
+    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.update_page(interaction, self.current_page + 1)
+
+    @discord.ui.button(label="Last >>", custom_id="last")
+    async def last_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.update_page(interaction, self.total_pages)

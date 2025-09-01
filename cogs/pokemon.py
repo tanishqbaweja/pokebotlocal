@@ -247,12 +247,20 @@ class Pokemon(commands.Cog):
         
         # Batch update party positions for better performance
         if party_pokemon:
-            update_values = [(i, pokemon['id']) for i, pokemon in enumerate(party_pokemon, 1)]
-            for position, pokemon_id in update_values:
-                await self.bot.db.execute(
-                    "UPDATE pokemon SET party_position = $1 WHERE id = $2",
-                    position, pokemon_id
-                )
+            try:
+                await self.bot.db.execute("BEGIN")
+                update_values = [(i, pokemon['id']) for i, pokemon in enumerate(party_pokemon, 1)]
+                for position, pokemon_id in update_values:
+                    await self.bot.db.execute(
+                        "UPDATE pokemon SET party_position = $1 WHERE id = $2",
+                        position, pokemon_id
+                    )
+                await self.bot.db.execute("COMMIT")
+            except Exception as e:
+                await self.bot.db.execute("ROLLBACK")
+                # Log the error, maybe notify the user
+                import logging
+                logging.error(f"Failed to reorder party for user {user_id}: {e}")
 
 class PokeboxView(discord.ui.View):
     def __init__(self, user_id, current_page, total_pages):
