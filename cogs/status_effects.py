@@ -8,7 +8,7 @@ class StatusEffects(commands.Cog):
         self.bot = bot
         
     def apply_status_damage(self, pokemon_data, battle_data):
-        """Apply status effect damage/effects"""
+        """Apply status effect damage/effects at the end of a turn."""
         pokemon = pokemon_data['pokemon']
         status = pokemon_data.get('status')
         result_messages = []
@@ -16,32 +16,13 @@ class StatusEffects(commands.Cog):
         if status == 'burn':
             damage = max(1, pokemon['current_hp'] // 16)
             pokemon['current_hp'] = max(0, pokemon['current_hp'] - damage)
-            result_messages.append(f"{pokemon['name']} is hurt by burn! ({damage} damage)")
+            result_messages.append(f"{pokemon['name']} is hurt by its burn! ({damage} damage)")
             
         elif status == 'poison':
             damage = max(1, pokemon['current_hp'] // 8)
             pokemon['current_hp'] = max(0, pokemon['current_hp'] - damage)
             result_messages.append(f"{pokemon['name']} is hurt by poison! ({damage} damage)")
             
-        elif status == 'sleep':
-            pokemon_data['status_turns'] -= 1
-            if pokemon_data['status_turns'] <= 0:
-                pokemon_data['status'] = None
-                result_messages.append(f"{pokemon['name']} woke up!")
-            else:
-                result_messages.append(f"{pokemon['name']} is fast asleep!")
-                
-        # Handle confusion
-        if pokemon_data.get('confused'):
-            pokemon_data['confusion_turns'] -= 1
-            if pokemon_data['confusion_turns'] <= 0:
-                pokemon_data['confused'] = False
-                result_messages.append(f"{pokemon['name']} snapped out of confusion!")
-            elif random.randint(1, 2) == 1:  # 50% chance to hurt itself
-                damage = pokemon['current_hp'] // 8
-                pokemon['current_hp'] = max(0, pokemon['current_hp'] - damage)
-                result_messages.append(f"{pokemon['name']} hurt itself in confusion! ({damage} damage)")
-                
         # Handle Leech Seed
         if pokemon_data.get('seeded'):
             damage = max(1, pokemon['current_hp'] // 8)
@@ -57,7 +38,8 @@ class StatusEffects(commands.Cog):
         return "\n".join(result_messages) if result_messages else None
         
     def can_use_move(self, pokemon_data):
-        """Check if Pokemon can use a move based on status"""
+        """Check if Pokemon can use a move based on status. Returns (can_move, message)"""
+        pokemon = pokemon_data['pokemon']
         status = pokemon_data.get('status')
         
         if status == 'freeze':
@@ -72,11 +54,25 @@ class StatusEffects(commands.Cog):
             return True, None
             
         elif status == 'sleep':
-            return False, f"{pokemon_data['pokemon']['name']} is fast asleep!"
+            pokemon_data['status_turns'] -= 1
+            if pokemon_data['status_turns'] <= 0:
+                pokemon_data['status'] = None
+                return True, f"{pokemon['name']} woke up!"
+            return False, f"{pokemon['name']} is fast asleep!"
+
+        # Handle confusion
+        if pokemon_data.get('confused'):
+            pokemon_data['confusion_turns'] -= 1
+            if pokemon_data['confusion_turns'] <= 0:
+                pokemon_data['confused'] = False
+                return True, f"{pokemon['name']} snapped out of confusion!"
             
-        # Check confusion
-        if pokemon_data.get('confused') and random.randint(1, 2) == 1:
-            return False, f"{pokemon_data['pokemon']['name']} is confused!"
+            # It is still confused, now check if it hurts itself
+            if random.randint(1, 2) == 1:  # 50% chance to hurt itself
+                damage = max(1, pokemon['current_hp'] // 8) # Simplified Gen 1 damage
+                pokemon['current_hp'] = max(0, pokemon['current_hp'] - damage)
+                # This is a pre-move action, so we need to log the damage and stop the move
+                return False, f"{pokemon['name']} hurt itself in its confusion! It took {damage} damage."
             
         return True, None
         

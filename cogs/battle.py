@@ -130,7 +130,8 @@ class Battle(commands.Cog):
             'server_id': channel.guild.id,
             'battle_text_log': [],
             'battle_log_message': None,
-            'message': None
+            'message': None,
+            'turn_count': 0
         }
         
         # Add first completion flag for NPC battles
@@ -257,9 +258,15 @@ class Battle(commands.Cog):
         return pokemon_data
 
     async def use_move(self, battle_data, user_id, move_name):
+        if battle_data.get('awaiting_switch') == user_id:
+            await interaction.response.send_message("You must switch your Pokémon!", ephemeral=True)
+            return
+
         if battle_data['turn'] != user_id:
             # This should not be sent to the user, but logged. For now, we just ignore.
             return
+
+        battle_data['turn_count'] += 1
 
         # Cancel timeout task for the current turn
         if battle_data.get('turn_timeout_task'):
@@ -286,6 +293,10 @@ class Battle(commands.Cog):
         if not move:
             battle_data['battle_text_log'].append("Invalid move!")
             return
+
+        # Clear the log at the start of a new round
+        if battle_data['turn_count'] > 2 and attacker_data['id'] == battle_data['challenger']['id']:
+             battle_data['battle_text_log'] = []
 
         attacker_name = get_display_name(attacker_data['id'])
         battle_data['battle_text_log'].append(f"{attacker_name}'s {attacker_data['pokemon']['name']} used {move_name.replace('_', ' ').title()}!")
@@ -1049,6 +1060,13 @@ class Battle(commands.Cog):
         if battle_data.get('turn_timeout_task'):
             battle_data['turn_timeout_task'].cancel()
         battle_data['turn'] = None
+
+        # Disable the view on the original message to prevent further interaction and duplicate timeouts
+        if battle_data.get('message'):
+            try:
+                await battle_data['message'].edit(view=None)
+            except discord.HTTPException:
+                pass # Ignore if message is already gone
 
         # Display the final battle log
         await self._send_battle_log_embed(battle_data)
