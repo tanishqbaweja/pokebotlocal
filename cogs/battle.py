@@ -16,6 +16,13 @@ class Battle(commands.Cog):
     async def battle(self, interaction: discord.Interaction, opponent: discord.Member):
         challenger_id = interaction.user.id
         opponent_id = opponent.id
+
+        # Rate Limiter Check
+        rate_limiter = self.bot.get_cog('RateLimiter')
+        if rate_limiter and rate_limiter.is_rate_limited(challenger_id, 'battle'):
+            cooldown = rate_limiter.get_cooldown_time(challenger_id, 'battle')
+            await interaction.response.send_message(f"You're challenging too frequently! Try again in {cooldown:.1f} seconds.", ephemeral=True)
+            return
         
         if challenger_id == opponent_id:
             await interaction.response.send_message("You can't battle yourself!", ephemeral=True)
@@ -148,22 +155,24 @@ class Battle(commands.Cog):
         embed = discord.Embed(title="Pokemon Battle!", color=0xf39c12)
         
         # Challenger Pokemon with status
-        c_hp_percent = (challenger_pokemon['current_hp'] / self._calculate_max_hp(challenger_pokemon)) * 100
+        c_max_hp = self._calculate_max_hp(challenger_pokemon)
+        c_hp_bar = self._create_hp_bar(challenger_pokemon['current_hp'], c_max_hp)
         c_status_text = self._get_status_display(battle_data['challenger'])
         embed.add_field(
             name=f"{challenger_pokemon['name']} (Lv.{challenger_pokemon['level']})",
-            value=f"HP: {challenger_pokemon['current_hp']}/{self._calculate_max_hp(challenger_pokemon)} ({c_hp_percent:.0f}%)\n{c_status_text}",
+            value=f"{c_hp_bar} {challenger_pokemon['current_hp']}/{c_max_hp}\n{c_status_text}",
             inline=True
         )
         
         embed.add_field(name="VS", value="⚔️", inline=True)
         
         # Opponent Pokemon with status
-        o_hp_percent = (opponent_pokemon['current_hp'] / self._calculate_max_hp(opponent_pokemon)) * 100
+        o_max_hp = self._calculate_max_hp(opponent_pokemon)
+        o_hp_bar = self._create_hp_bar(opponent_pokemon['current_hp'], o_max_hp)
         o_status_text = self._get_status_display(battle_data['opponent'])
         embed.add_field(
             name=f"{opponent_pokemon['name']} (Lv.{opponent_pokemon['level']})",
-            value=f"HP: {opponent_pokemon['current_hp']}/{self._calculate_max_hp(opponent_pokemon)} ({o_hp_percent:.0f}%)\n{o_status_text}",
+            value=f"{o_hp_bar} {opponent_pokemon['current_hp']}/{o_max_hp}\n{o_status_text}",
             inline=True
         )
         
@@ -192,8 +201,11 @@ class Battle(commands.Cog):
         battle_data['turn_start_time'] = asyncio.get_event_loop().time()
         
     async def use_move(self, battle_data, user_id, move_name):
+        return_data = {'text': '', 'end_embed': None}
+
         if battle_data['turn'] != user_id:
-            return "It's not your turn!"
+            return_data['text'] = "It's not your turn!"
+            return return_data
             
         # Cancel timeout task
         if battle_data.get('turn_timeout_task'):
@@ -214,11 +226,13 @@ class Battle(commands.Cog):
             if not can_move:
                 result_text = status_message
                 battle_data['turn'] = defender_data['id']
-                return result_text
+                return_data['text'] = result_text
+                return return_data
             
         move = MOVES_DATA.get(move_name)
         if not move:
-            return "Invalid move!"
+            return_data['text'] = "Invalid move!"
+            return return_data
             
         result_text = f"{attacker_data['pokemon']['name']} used {move_name.replace('_', ' ').title()}!\n"
         
@@ -226,7 +240,8 @@ class Battle(commands.Cog):
         if move['category'] != 'status' and not self._check_move_accuracy(move, attacker_data, defender_data):
             result_text += "The attack missed!"
             battle_data['turn'] = defender_data['id']
-            return result_text
+            return_data['text'] = result_text
+            return return_data
         
         # Handle status moves
         if move['category'] == 'status':
@@ -241,14 +256,15 @@ class Battle(commands.Cog):
             if defender_data['pokemon']['current_hp'] <= 0:
                 result_text += f"\n{defender_data['pokemon']['name']} fainted!"
                 
-                # Award experience for defeating opponent Pokemon (only for real Pokemon, not NPCs)
-                if attacker_data['pokemon']['id'] > 0:
-                    exp_gained = (defender_data['pokemon']['level'] * 50) // attacker_data['pokemon']['level']
-                    if exp_gained > 0:
-                        experience_cog = self.bot.get_cog('Experience')
-                        if experience_cog:
-                            await experience_cog._add_experience(attacker_data['pokemon'], exp_gained)
-                            result_text += f"\n{attacker_data['pokemon']['name']} gained {exp_gained} experience!"
+                # Award experience for defeating opponent Pokemon
+                exp_gained = self._calculate_exp_gain(attacker_data, defender_data)
+                if exp_gained > 0:
+                    experience_cog = self.bot.get_cog('Experience')
+                    if experience_cog:
+                        leveled_up = await experience_cog._add_experience(attacker_data['pokemon'], exp_gained)
+                        result_text += f"\n{attacker_data['pokemon']['name']} gained {exp_gained} experience!"
+                        if leveled_up:
+                            result_text += f"\n{attacker_data['pokemon']['name']} grew to level {leveled_up}!"
         else:
             # Calculate damage for attacking moves
             damage = self._calculate_damage(attacker_data, defender_data, move_name)
@@ -296,14 +312,15 @@ class Battle(commands.Cog):
             if defender_data['pokemon']['current_hp'] <= 0:
                 result_text += f"\n{defender_data['pokemon']['name']} fainted!"
                 
-                # Award experience for defeating opponent Pokemon (only for real Pokemon, not NPCs)
-                if attacker_data['pokemon']['id'] > 0:
-                    exp_gained = (defender_data['pokemon']['level'] * 50) // attacker_data['pokemon']['level']
-                    if exp_gained > 0:
-                        experience_cog = self.bot.get_cog('Experience')
-                        if experience_cog:
-                            await experience_cog._add_experience(attacker_data['pokemon'], exp_gained)
-                            result_text += f"\n{attacker_data['pokemon']['name']} gained {exp_gained} experience!"
+                # Award experience for defeating opponent Pokemon
+                exp_gained = self._calculate_exp_gain(attacker_data, defender_data)
+                if exp_gained > 0:
+                    experience_cog = self.bot.get_cog('Experience')
+                    if experience_cog:
+                        leveled_up = await experience_cog._add_experience(attacker_data['pokemon'], exp_gained)
+                        result_text += f"\n{attacker_data['pokemon']['name']} gained {exp_gained} experience!"
+                        if leveled_up:
+                            result_text += f"\n{attacker_data['pokemon']['name']} grew to level {leveled_up}!"
                 
                 # Handle Pokemon switching (NPC or Player)
                 if defender_data['id'] < 0:
@@ -320,39 +337,35 @@ class Battle(commands.Cog):
                             next_pokemon = gym_cog._create_npc_pokemon(next_npc_data)
                             defender_data['pokemon'] = dict(next_pokemon)
                             
-                            # Reset NPC status effects for new Pokemon
-                            defender_data['stats'] = {
-                                'attack': 0, 'defense': 0, 'special': 0, 'speed': 0,
-                                'accuracy': 0, 'evasion': 0
-                            }
-                            defender_data['status'] = None
-                            defender_data['status_turns'] = 0
-                            defender_data['confused'] = False
-                            defender_data['confusion_turns'] = 0
-                            defender_data['seeded'] = False
-                            defender_data['substitute'] = 0
+                            # Reset volatile stats for the new NPC Pokemon
+                            self._reset_volatile_stats(defender_data)
                             
                             result_text += f"\nEnemy sent out {next_pokemon['name']}!"
                             battle_data['turn'] = defender_data['id']  # NPC's turn with new Pokemon
-                            return result_text
+                            return_data['text'] = result_text
+                            return return_data
                         else:
                             # No more NPC Pokemon - player wins, end battle immediately
                             result_text += "\nYou won the battle!"
                             battle_data['turn'] = None  # Clear turn to stop battle
                             await self._end_battle(battle_data, attacker_data['id'])
-                            return result_text
+                            return_data['text'] = result_text
+                            return return_data
                     else:
                         # No gym battle data found - end battle
                         await self._end_battle(battle_data, attacker_data['id'])
-                        return result_text
+                        return_data['text'] = result_text
+                        return return_data
                 else:
                     # Player Pokemon fainted - get fresh party data
                     fresh_party = await self.bot.db.get_user_pokemon(defender_data['id'], in_party=True)
                     available_pokemon = [p for p in fresh_party if p['current_hp'] > 0]
                     
                     if len(available_pokemon) == 0:  # No Pokemon left
-                        await self._end_battle(battle_data, attacker_data['id'])
-                        return result_text
+                        end_embed = await self._end_battle(battle_data, attacker_data['id'])
+                        return_data['text'] = result_text
+                        return_data['end_embed'] = end_embed
+                        return return_data
                     else:
                         # Auto-send next available Pokemon
                         next_pokemon = available_pokemon[0]
@@ -362,21 +375,13 @@ class Battle(commands.Cog):
                             if p['id'] == next_pokemon['id']:
                                 defender_data['current_index'] = i
                                 break
-                        # Reset status effects for new Pokemon
-                        defender_data['stats'] = {
-                            'attack': 0, 'defense': 0, 'special': 0, 'speed': 0,
-                            'accuracy': 0, 'evasion': 0
-                        }
-                        defender_data['status'] = None
-                        defender_data['status_turns'] = 0
-                        defender_data['confused'] = False
-                        defender_data['confusion_turns'] = 0
-                        defender_data['seeded'] = False
-                        defender_data['substitute'] = 0
+                        # Reset volatile stats for the new Pokemon
+                        self._reset_volatile_stats(defender_data)
                         
                         result_text += f"\n<@{defender_data['id']}> sent out {next_pokemon['name']}!"
                         # Keep turn with same player when Pokemon faints (forced switch)
-                        return result_text
+                        return_data['text'] = result_text
+                        return return_data
             
         # Apply end-of-turn status effects
         if status_cog:
@@ -405,7 +410,9 @@ class Battle(commands.Cog):
         # Switch turns (only if no Pokemon fainted)
         if defender_data['pokemon']['current_hp'] > 0:
             battle_data['turn'] = defender_data['id']
-        return result_text
+
+        return_data['text'] = result_text
+        return return_data
         
     async def _handle_status_move(self, battle_data, attacker_data, defender_data, move_name):
         """Handle status moves and their effects"""
@@ -414,18 +421,24 @@ class Battle(commands.Cog):
         
         # Stat modification moves
         if move_name in ['growl', 'tail_whip', 'leer']:
+            if defender_data.get('mist'):
+                return f"{defender['name']} is protected by Mist!"
             if defender_data['stats']['attack'] > -6:
                 defender_data['stats']['attack'] -= 1
                 return f"{defender['name']}'s Attack fell!"
             return f"{defender['name']}'s Attack won't go any lower!"
             
-        elif move_name in ['screech', 'acid']:
+        elif move_name == 'screech':
+            if defender_data.get('mist'):
+                return f"{defender['name']} is protected by Mist!"
             if defender_data['stats']['defense'] > -6:
-                defender_data['stats']['defense'] -= 1
-                return f"{defender['name']}'s Defense fell!"
+                defender_data['stats']['defense'] = max(-6, defender_data['stats']['defense'] - 2)
+                return f"{defender['name']}'s Defense harshly fell!"
             return f"{defender['name']}'s Defense won't go any lower!"
             
         elif move_name in ['sand_attack', 'smokescreen', 'flash', 'kinesis']:
+            if defender_data.get('mist'):
+                return f"{defender['name']} is protected by Mist!"
             if defender_data['stats']['accuracy'] > -6:
                 defender_data['stats']['accuracy'] -= 1
                 return f"{defender['name']}'s accuracy fell!"
@@ -451,14 +464,22 @@ class Battle(commands.Cog):
                     return f"{attacker['name']}'s Speed rose sharply!"
                 return f"{attacker['name']}'s Speed won't go any higher!"
             else:  # string_shot
+                if defender_data.get('mist'):
+                    return f"{defender['name']} is protected by Mist!"
                 if defender_data['stats']['speed'] > -6:
                     defender_data['stats']['speed'] -= 1
                     return f"{defender['name']}'s Speed fell!"
                 return f"{defender['name']}'s Speed won't go any lower!"
                 
-        elif move_name in ['amnesia', 'barrier']:
+        elif move_name == 'barrier':
+            if attacker_data['stats']['defense'] < 6:
+                attacker_data['stats']['defense'] = min(6, attacker_data['stats']['defense'] + 2)
+                return f"{attacker['name']}'s Defense rose sharply!"
+            return f"{attacker['name']}'s Defense won't go any higher!"
+
+        elif move_name == 'amnesia':
             if attacker_data['stats']['special'] < 6:
-                attacker_data['stats']['special'] += 2
+                attacker_data['stats']['special'] = min(6, attacker_data['stats']['special'] + 2)
                 return f"{attacker['name']}'s Special rose sharply!"
             return f"{attacker['name']}'s Special won't go any higher!"
             
@@ -478,7 +499,7 @@ class Battle(commands.Cog):
         elif move_name in ['sleep_powder', 'spore', 'sing', 'hypnosis', 'lovely_kiss']:
             if defender_data.get('status') is None:
                 defender_data['status'] = 'sleep'
-                defender_data['status_turns'] = random.randint(1, 3)
+                defender_data['status_turns'] = random.randint(1, 7)
                 return f"{defender['name']} fell asleep!"
             return f"{defender['name']} is already affected by a status condition!"
             
@@ -518,13 +539,8 @@ class Battle(commands.Cog):
                 
         # Transform (Ditto's signature move)
         elif move_name == 'transform':
-            # Copy opponent's stats, types, and moves but keep own HP
+            # Gen 1: Copy opponent's stats, types, moves, and current HP
             defender_species = POKEMON_DATA[defender['species_id']]
-            attacker_species = POKEMON_DATA[attacker['species_id']]
-            
-            # Store original HP
-            original_hp = attacker['current_hp']
-            original_max_hp = self._calculate_max_hp(attacker)
             
             # Transform attacker into defender
             attacker_data['transformed'] = True
@@ -538,11 +554,13 @@ class Battle(commands.Cog):
             attacker['move3'] = defender.get('move3')
             attacker['move4'] = defender.get('move4')
             
-            # Copy IVs for stat calculation (but keep own HP)
+            # Copy IVs for stat calculation and current HP
+            attacker['hp_iv'] = defender['hp_iv']
             attacker['attack_iv'] = defender['attack_iv']
             attacker['defense_iv'] = defender['defense_iv']
             attacker['special_iv'] = defender['special_iv']
             attacker['speed_iv'] = defender['speed_iv']
+            attacker['current_hp'] = defender['current_hp']
             
             # Reset stat stages to match opponent
             attacker_data['stats'] = dict(defender_data['stats'])
@@ -587,8 +605,8 @@ class Battle(commands.Cog):
             return f"{defender['name']} took {damage} damage from Seismic Toss!"
             
         elif move_name == 'super_fang':
-            damage = defender['current_hp'] // 2
-            defender['current_hp'] = max(1, defender['current_hp'] - damage)
+            damage = max(1, defender['current_hp'] // 2)
+            defender['current_hp'] = max(0, defender['current_hp'] - damage)
             await self.bot.db.execute(
                 "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
                 defender['current_hp'], defender['id']
@@ -612,15 +630,28 @@ class Battle(commands.Cog):
             return f"{attacker['name']}'s evasiveness won't go any higher!"
             
         elif move_name == 'haze':
-            # Reset all stat changes
+            # Gen 1: Reset all stat changes and status conditions for both Pokemon
             for side in [attacker_data, defender_data]:
                 side['stats'] = {'attack': 0, 'defense': 0, 'special': 0, 'speed': 0, 'accuracy': 0, 'evasion': 0}
-            return "All stat changes were eliminated!"
+                side['status'] = None
+                side['status_turns'] = 0
+                side['confused'] = False
+                side['confusion_turns'] = 0
+                # Haze also removes Leech Seed from the user, here we remove from both for simplicity
+                side['seeded'] = False
+            return "A haze enveloped the battlefield, eliminating all stat changes and status effects!"
+
+        elif move_name == 'mist':
+            attacker_data['mist'] = True
+            return f"{attacker['name']} is protected by Mist!"
+
+        elif move_name == 'reflect':
+            attacker_data['reflect'] = True
+            return f"{attacker['name']} raised its Defense with Reflect!"
             
-        elif move_name in ['mist', 'light_screen', 'reflect']:
-            attacker_data[move_name] = 5  # Lasts 5 turns
-            effect_name = {'mist': 'Mist', 'light_screen': 'Light Screen', 'reflect': 'Reflect'}[move_name]
-            return f"{attacker['name']} is protected by {effect_name}!"
+        elif move_name == 'light_screen':
+            attacker_data['light_screen'] = True
+            return f"{attacker['name']} raised its Special with Light Screen!"
             
         elif move_name == 'leech_seed':
             if not defender_data.get('seeded'):
@@ -716,11 +747,20 @@ class Battle(commands.Cog):
             # Apply stat stages
             attack_stat = self._apply_stat_stage(base_attack, attacker_data['stats']['attack'])
             defense_stat = self._apply_stat_stage(base_defense, defender_data['stats']['defense'])
+            # Burn halves physical attack in Gen 1
+            if attacker_data.get('status') == 'burn':
+                attack_stat //= 2
+            # Reflect doubles defense vs physical
+            if defender_data.get('reflect'):
+                defense_stat *= 2
         else:
             base_special_att = self._calculate_stat(attacker_species['base_special'], attacker['special_iv'], attacker['level'])
             base_special_def = self._calculate_stat(defender_species['base_special'], defender['special_iv'], defender['level'])
             attack_stat = self._apply_stat_stage(base_special_att, attacker_data['stats']['special'])
             defense_stat = self._apply_stat_stage(base_special_def, defender_data['stats']['special'])
+            # Light Screen doubles special vs special
+            if defender_data.get('light_screen'):
+                defense_stat *= 2
             
         # Base damage calculation
         damage = ((2 * attacker['level'] + 10) / 250) * (attack_stat / defense_stat) * move['power'] + 2
@@ -737,13 +777,14 @@ class Battle(commands.Cog):
         high_crit_moves = ['slash', 'razor_leaf', 'crabhammer', 'karate_chop']
         if move_name in high_crit_moves:
             crit_chance = 8  # 12.5% (1/8)
+
+        # Gen 1 Focus Energy bug: it quarters the crit rate instead of doubling it
+        if attacker_data.get('focus_energy'):
+            crit_chance *= 4
             
         if random.randint(1, crit_chance) == 1:
             effectiveness *= 2
-            
-        # Status effect modifications
-        if attacker_data.get('status') == 'burn' and move['category'] == 'physical':
-            effectiveness *= 0.5
+            result_text += "\nA critical hit!"
             
         # Random factor (85-100%)
         random_factor = random.randint(85, 100) / 100
@@ -786,6 +827,22 @@ class Battle(commands.Cog):
             status_parts.append('🔄 TFRM')
             
         return ' | '.join(status_parts) if status_parts else 'No effects'
+
+    def _create_hp_bar(self, current_hp, max_hp):
+        """Creates a text-based HP bar."""
+        hp_percentage = current_hp / max_hp
+        bar_length = 10
+        filled_length = int(bar_length * hp_percentage)
+
+        if hp_percentage > 0.5:
+            color = '🟩'
+        elif hp_percentage > 0.2:
+            color = '🟨'
+        else:
+            color = '🟥'
+
+        bar = color * filled_length + '⬜' * (bar_length - filled_length)
+        return f"[{bar}]"
         
     def _check_secondary_effects(self, move_name, defender_data):
         """Check for secondary effects of attacking moves using SECONDARY_EFFECTS data"""
@@ -901,7 +958,10 @@ class Battle(commands.Cog):
             )
             
             await battle_data['channel'].send(embed=embed)
-            await self._end_battle(battle_data, other_user)
+            end_embed = await self._end_battle(battle_data, other_user)
+            if end_embed:
+                await asyncio.sleep(0.1)
+                await battle_data['channel'].send(embed=end_embed)
         
     def _calculate_stat(self, base_stat, iv, level):
         return int(((base_stat + iv) * 2 * level / 100) + 5)
@@ -909,6 +969,42 @@ class Battle(commands.Cog):
     def _calculate_max_hp(self, pokemon):
         species = POKEMON_DATA[pokemon['species_id']]
         return ((species['base_hp'] + pokemon['hp_iv']) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
+
+    def _calculate_exp_gain(self, attacker_data, defender_data):
+        """Calculates experience points gained from defeating a Pokemon based on Gen 1 formula."""
+        if attacker_data['pokemon']['id'] <= 0:  # Don't award exp to NPCs
+            return 0
+
+        defender_pokemon = defender_data['pokemon']
+        defender_species = POKEMON_DATA[defender_pokemon['species_id']]
+
+        base_exp = defender_species.get('base_experience', 60)  # Fallback for safety
+        level = defender_pokemon['level']
+
+        # All battles are trainer battles in this bot (PvP or PvE vs Gym/Elite4)
+        trainer_battle_multiplier = 1.5
+
+        exp_gained = int((trainer_battle_multiplier * base_exp * level) / 7)
+
+        return exp_gained
+
+    def _reset_volatile_stats(self, side_data):
+        """Resets stats and conditions that are cleared on switch."""
+        side_data['stats'] = {
+            'attack': 0, 'defense': 0, 'special': 0, 'speed': 0,
+            'accuracy': 0, 'evasion': 0
+        }
+        side_data['confused'] = False
+        side_data['confusion_turns'] = 0
+        side_data['seeded'] = False
+        side_data['substitute'] = 0
+        side_data['transformed'] = False
+        side_data['focus_energy'] = False
+        side_data['disabled_move'] = None
+        side_data['disable_turns'] = 0
+        side_data['reflect'] = False
+        side_data['light_screen'] = False
+        side_data['mist'] = False
         
     def _choose_strategic_move(self, npc_data, battle_data, valid_moves):
         """Enhanced strategic AI for NPC move selection"""
@@ -946,78 +1042,90 @@ class Battle(commands.Cog):
                     
             # Enhanced status move strategy
             elif move['category'] == 'status':
-                # Healing moves when low HP
-                if move_name in ['recover', 'rest', 'soft_boiled']:
-                    npc_hp_percent = npc_pokemon['current_hp'] / self._calculate_max_hp(npc_pokemon)
-                    if npc_hp_percent < 0.25:
-                        score = 90  # Critical healing
-                    elif npc_hp_percent < 0.5:
-                        score = 50
-                    else:
-                        score = 10  # Don't heal when healthy
-                        
-                # Stat boosting when healthy and no status effects
-                elif move_name in ['swords_dance', 'agility', 'amnesia', 'barrier', 'harden', 'defense_curl']:
-                    npc_hp_percent = npc_pokemon['current_hp'] / self._calculate_max_hp(npc_pokemon)
-                    if npc_hp_percent > 0.7 and not npc_data.get('status'):
-                        # Check if already boosted
-                        stat_boosts = npc_data.get('stats', {})
+                player_stats = player_data.get('stats', {})
+                npc_stats = npc_data.get('stats', {})
+
+                # Defensive reaction to player's high stats
+                if player_stats.get('attack', 0) >= 2:
+                    if move_name in ['reflect', 'harden', 'withdraw']:
+                        score += 30 # Prioritize physical defense
+                    if move_name in ['growl', 'tail_whip']:
+                        score += 30 # Prioritize lowering player's attack
+
+                if player_stats.get('special', 0) >= 2:
+                    if move_name == 'light_screen':
+                        score += 30 # Prioritize special defense
+
+                    # Healing moves when low HP
+                    if move_name in ['recover', 'rest', 'soft_boiled']:
+                        npc_hp_percent = npc_pokemon['current_hp'] / self._calculate_max_hp(npc_pokemon)
+                        if npc_hp_percent < 0.25:
+                            score = 90  # Critical healing
+                        elif npc_hp_percent < 0.5:
+                            score = 50
+                        else:
+                            score = 10  # Don't heal when healthy
+
+                    # Stat boosting when healthy and no status effects
+                    elif move_name in ['swords_dance', 'agility', 'amnesia', 'barrier', 'harden', 'defense_curl']:
+                        npc_hp_percent = npc_pokemon['current_hp'] / self._calculate_max_hp(npc_pokemon)
+                        if npc_hp_percent > 0.7 and not npc_data.get('status'):
+                            # Check if already boosted
+                            stat_boosts = npc_data.get('stats', {})
+                            stat_map = {
+                                'swords_dance': 'attack', 'agility': 'speed', 'amnesia': 'special',
+                                'barrier': 'defense', 'harden': 'defense', 'defense_curl': 'defense'
+                            }
+                            relevant_stat = stat_map.get(move_name, 'attack')
+                            if stat_boosts.get(relevant_stat, 0) < 2:
+                                score = 45
+                            else:
+                                score = 5  # Already boosted enough
+
+                    # Status infliction - prioritize if opponent has no status
+                    elif move_name in ['sleep_powder', 'thunder_wave', 'toxic', 'poison_powder', 'stun_spore', 'hypnosis', 'sing']:
+                        if not player_data.get('status'):
+                            score = 50
+                            # Extra priority for sleep and paralysis
+                            if move_name in ['sleep_powder', 'thunder_wave', 'hypnosis']:
+                                score = 60
+                        else:
+                            score = 5  # Don't waste turn on already statused opponent
+
+                    # Confusion moves
+                    elif move_name in ['confuse_ray', 'supersonic']:
+                        if not player_data.get('confused'):
+                            score = 35
+                        else:
+                            score = 5  # Don't confuse already confused opponent
+
+                    # Stat reduction moves
+                    elif move_name in ['growl', 'leer', 'sand_attack', 'smokescreen']:
+                        player_stats = player_data.get('stats', {})
                         stat_map = {
-                            'swords_dance': 'attack', 'agility': 'speed', 'amnesia': 'special', 
-                            'barrier': 'defense', 'harden': 'defense', 'defense_curl': 'defense'
+                            'growl': 'attack', 'leer': 'defense',
+                            'sand_attack': 'accuracy', 'smokescreen': 'accuracy'
                         }
                         relevant_stat = stat_map.get(move_name, 'attack')
-                        if stat_boosts.get(relevant_stat, 0) < 2:
-                            score = 45
+                        if player_stats.get(relevant_stat, 0) > -3:
+                            score = 25  # Moderate priority for stat reduction
                         else:
-                            score = 5  # Already boosted enough
-                        
-                # Status infliction - prioritize if opponent has no status
-                elif move_name in ['sleep_powder', 'thunder_wave', 'toxic', 'poison_powder', 'stun_spore', 'hypnosis', 'sing']:
-                    if not player_data.get('status'):
-                        score = 50
-                        # Extra priority for sleep and paralysis
-                        if move_name in ['sleep_powder', 'thunder_wave', 'hypnosis']:
-                            score = 60
-                    else:
-                        score = 5  # Don't waste turn on already statused opponent
-                            
-                # Confusion moves
-                elif move_name in ['confuse_ray', 'supersonic']:
-                    if not player_data.get('confused'):
-                        score = 35
-                    else:
-                        score = 5  # Don't confuse already confused opponent
-                        
-                # Stat reduction moves
-                elif move_name in ['growl', 'leer', 'sand_attack', 'smokescreen']:
-                    player_stats = player_data.get('stats', {})
-                    stat_map = {
-                        'growl': 'attack', 'leer': 'defense', 
-                        'sand_attack': 'accuracy', 'smokescreen': 'accuracy'
-                    }
-                    relevant_stat = stat_map.get(move_name, 'attack')
-                    if player_stats.get(relevant_stat, 0) > -3:
-                        score = 25  # Moderate priority for stat reduction
-                    else:
-                        score = 5  # Don't over-debuff
+                            score = 5  # Don't over-debuff
                         
             move_scores.append((move_name, score))
             
-        # Choose best move with strategic randomness
-        move_scores.sort(key=lambda x: x[1], reverse=True)
-        
-        # 80% chance to pick best move, 20% chance for variety (more strategic)
-        if random.randint(1, 100) <= 80 and move_scores[0][1] > 0:
-            return move_scores[0][0]
-        else:
-            # Pick from top 3 moves for more focused strategy
-            top_moves = move_scores[:min(3, len(move_scores))]
-            valid_top = [m for m in top_moves if m[1] > 0]
-            if valid_top:
-                return random.choice(valid_top)[0]
-            else:
-                return random.choice(valid_moves)
+        # Choose best move with weighted randomness
+        # Ensure scores are non-negative before using as weights
+        moves = [ms[0] for ms in move_scores]
+        weights = [max(0, ms[1]) for ms in move_scores]
+
+        # If all weights are zero, fall back to a simple random choice
+        if not any(weights):
+            return random.choice(valid_moves)
+
+        # Use weighted random choice
+        chosen_move = random.choices(moves, weights=weights, k=1)[0]
+        return chosen_move
         
     async def _handle_npc_turn(self, battle_data):
         """Handle NPC turn automatically"""
@@ -1054,9 +1162,17 @@ class Battle(commands.Cog):
             chosen_move = self._choose_strategic_move(npc_data, battle_data, valid_moves)
             
             # Execute move
-            result = await self.use_move(battle_data, npc_data['id'], chosen_move)
-            await battle_data['channel'].send(result)
+            result_data = await self.use_move(battle_data, npc_data['id'], chosen_move)
+
+            # Send result text
+            embed = discord.Embed(description=result_data.get('text', 'An error occurred.'), color=0x3498db)
+            await battle_data['channel'].send(embed=embed)
             
+            # Send end embed if it exists
+            if result_data.get('end_embed'):
+                await asyncio.sleep(0.1)
+                await battle_data['channel'].send(embed=result_data['end_embed'])
+
             # Continue battle if not ended and battle still exists
             if npc_id in self.active_battles and battle_data.get('turn'):
                 await asyncio.sleep(1)
@@ -1071,10 +1187,9 @@ class Battle(commands.Cog):
             if player_id in gym_cog.active_gym_battles:
                 gym_battle_data = gym_cog.active_gym_battles[player_id]
                 if winner_id == player_id:
-                    await gym_cog._handle_gym_victory(gym_battle_data)
+                    return await gym_cog._handle_gym_victory(gym_battle_data)
                 else:
-                    await gym_cog._handle_player_loss(gym_battle_data)
-                return
+                    return await gym_cog._handle_player_loss(gym_battle_data)
         
         # Get IDs from battle data
         challenger_id = battle_data['challenger']['id']
@@ -1107,7 +1222,6 @@ class Battle(commands.Cog):
                 logging.info(f"NPC completion tracking failed (table may not exist): {e}")
             
         # Remove from active battles
-        
         if challenger_id in self.active_battles:
             del self.active_battles[challenger_id]
         if opponent_id in self.active_battles:
@@ -1142,7 +1256,9 @@ class Battle(commands.Cog):
             embed.add_field(name="Experience Gained", value=f"{exp_gained} XP", inline=True)
             embed.add_field(name="Money Gained", value=f"{money_gained} rupees", inline=True)
             
-            await battle_data['channel'].send(embed=embed)
+            return embed
+
+        return None
 
 class BattleRequestView(discord.ui.View):
     def __init__(self, bot, challenger_id, opponent_id, challenger_pokemon, opponent_pokemon):
@@ -1236,9 +1352,17 @@ class BattleMoveView(discord.ui.View):
                 return
                 
             battle_cog = self.bot.get_cog('Battle')
-            result = await battle_cog.use_move(self.battle_data, self.user_id, move_name)
-            
-            await interaction.response.send_message(result)
+            result_data = await battle_cog.use_move(self.battle_data, self.user_id, move_name)
+
+            # Format the result into an embed for better readability
+            embed = discord.Embed(description=result_data.get('text', 'An error occurred.'), color=0x3498db)
+            await interaction.response.send_message(embed=embed)
+
+            # If there's an end-of-battle embed, send it as a new message.
+            if result_data.get('end_embed'):
+                await asyncio.sleep(0.1)  # Ensure message order
+                await self.battle_data['channel'].send(embed=result_data['end_embed'])
+                return  # Battle is over, no need to send new status
             
             # Check if battle still exists (may have ended during move execution)
             if self.user_id not in battle_cog.active_battles:
@@ -1291,7 +1415,12 @@ class PokemonSwitchView(discord.ui.View):
                 return
                 
             # Switch Pokemon
+            battle_cog = self.bot.get_cog('Battle')
             user_data = self.battle_data['challenger'] if self.user_id == self.battle_data['challenger']['id'] else self.battle_data['opponent']
+
+            # Reset volatile stats for the side that is switching
+            battle_cog._reset_volatile_stats(user_data)
+
             user_data['pokemon'] = dict(user_data['party'][pokemon_index])
             user_data['current_index'] = pokemon_index
             
@@ -1300,14 +1429,12 @@ class PokemonSwitchView(discord.ui.View):
             
             if self.is_forced:
                 await interaction.response.send_message(f"Go, {species['name']}!")
-                battle_cog = self.bot.get_cog('Battle')
                 await battle_cog._send_battle_status(self.battle_data)
             else:
                 # Voluntary switch - give turn to opponent
                 other_user_id = self.battle_data['opponent']['id'] if self.user_id == self.battle_data['challenger']['id'] else self.battle_data['challenger']['id']
                 self.battle_data['turn'] = other_user_id
                 await interaction.response.send_message(f"Switched to {species['name']}!")
-                battle_cog = self.bot.get_cog('Battle')
                 await battle_cog._send_battle_status(self.battle_data)
                 
         return callback

@@ -1,11 +1,8 @@
 import discord
 from discord.ext import commands
-import asyncpg
 import os
 from dotenv import load_dotenv
-import asyncio
 import logging
-# Pokemon data is imported by individual cogs as needed
 from utils.database import Database
 
 # Configure logging
@@ -41,11 +38,8 @@ class PokemonBot(commands.Bot):
         await self.load_extension('cogs.trading')
         await self.load_extension('cogs.evolution')
         await self.load_extension('cogs.moves')
-        await self.load_extension('cogs.config')
         await self.load_extension('cogs.status_effects')
         await self.load_extension('cogs.rate_limiter')
-        await self.load_extension('cogs.battle_accept')
-        await self.load_extension('cogs.caching')
         await self.load_extension('cogs.sprites')
         await self.load_extension('cogs.backup_system')
         await self.load_extension('cogs.help_system')
@@ -54,6 +48,7 @@ class PokemonBot(commands.Bot):
         await self.load_extension('cogs.pokedex')
         await self.load_extension('cogs.invite')
         await self.load_extension('cogs.move_learning')
+        await self.load_extension('cogs.default_pokeball')
 
         
     async def on_ready(self):
