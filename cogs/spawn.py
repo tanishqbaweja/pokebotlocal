@@ -1,0 +1,362 @@
+import discord
+from discord.ext import commands
+from discord import app_commands
+import random
+import asyncio
+from io import BytesIO
+from data.complete_pokemon_data import COMPLETE_POKEMON_DATA as POKEMON_DATA, RARITY_WEIGHTS
+
+class Spawn(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.active_spawns = {}  # guild_id: {pokemon_data, message}
+        
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.bot or not message.guild:
+            return
+            
+        # Get config and parse channels
+        config = await self.bot.db.fetchrow(
+            "SELECT * FROM server_config WHERE guild_id = $1", message.guild.id
+        )
+        
+        if not config or not config['spawn_channels']:
+            return
+            
+        # Parse combined channel data
+        all_channels = config.get('spawn_channels', [])
+        if -1 in all_channels:
+            separator_index = all_channels.index(-1)
+            monitor_channels = all_channels[:separator_index]
+            spawn_channels = all_channels[separator_index + 1:]
+        else:
+            # Fallback to old format
+            monitor_channels = all_channels
+            spawn_channels = all_channels
+            
+        # Check if message is in monitor channel
+        if message.channel.id not in monitor_channels:
+            return
+            
+        # Select spawn channel
+        if spawn_channels:
+            spawn_channel = message.guild.get_channel(random.choice(spawn_channels))
+        else:
+            spawn_channel = message.channel
+            
+        if not spawn_channel:
+            spawn_channel = message.channel
+            
+        # XP and money are handled by the Experience cog
+        
+        # Increment message count
+        new_count = config['message_count'] + 1
+        await self.bot.db.execute(
+            "UPDATE server_config SET message_count = $1 WHERE guild_id = $2",
+            new_count, message.guild.id
+        )
+        
+        # Check if spawn should trigger
+        if new_count >= config['messages_until_spawn']:
+            await self._spawn_pokemon(spawn_channel, message.guild.id)
+            
+    async def _spawn_pokemon(self, channel, guild_id):
+        # Reset counter and set new spawn requirement
+        new_requirement = random.randint(10, 20)
+        await self.bot.db.execute(
+            "UPDATE server_config SET message_count = 0, messages_until_spawn = $1 WHERE guild_id = $2",
+            new_requirement, guild_id
+        )
+            
+        # Select random Pokemon with evolution bias
+        evolution_pool = []
+        for pokemon_id, data in POKEMON_DATA.items():
+            # Base forms get higher weight, evolved forms get lower weight but higher levels
+            if data.get('evolution_stage', 1) == 1:  # Base form
+                weight = RARITY_WEIGHTS[data['rarity']] * 10
+            elif data.get('evolution_stage', 1) == 2:  # First evolution
+                weight = RARITY_WEIGHTS[data['rarity']] * 3
+            else:  # Final evolution
+                weight = RARITY_WEIGHTS[data['rarity']] * 1
+            evolution_pool.extend([pokemon_id] * weight)
+            
+        species_id = random.choice(evolution_pool)
+        pokemon_data = POKEMON_DATA[species_id]
+        
+        # Level based on evolution stage and rarity
+        evolution_stage = pokemon_data.get('evolution_stage', 1)
+        if evolution_stage == 1:  # Base form
+            level = random.randint(5, 25)
+        elif evolution_stage == 2:  # First evolution
+            level = random.randint(20, 45)
+        else:  # Final evolution
+            level = random.randint(35, 62)
+            
+        # Adjust level based on rarity
+        rarity_bonus = {'common': 0, 'uncommon': 5, 'rare': 10, 'legendary': 15}
+        level = min(62, level + rarity_bonus[pokemon_data['rarity']])
+        
+        # Check for shiny (1/4096 chance)
+        is_shiny = random.randint(1, 4096) == 1
+        
+        # Create spawn embed
+        embed = discord.Embed(
+            title="A wild Pokemon appeared!",
+            description=f"A wild **{pokemon_data['name']}** (Level {level}) appeared!",
+            color=0xffd700 if is_shiny else 0x3498db
+        )
+        
+        if is_shiny:
+            embed.description += " ✨ **It's shiny!** ✨"
+            
+        embed.add_field(name="Type", value=f"{pokemon_data['type1']}" + (f"/{pokemon_data['type2']}" if pokemon_data['type2'] else ""), inline=True)
+        embed.add_field(name="Rarity", value=pokemon_data['rarity'].title(), inline=True)
+        embed.add_field(name="Catch", value="Use `/catch` to attempt capture!", inline=False)
+        
+        # Try to add Pokemon sprite
+        sprite_cog = self.bot.get_cog('SpriteSystem')
+        files = []
+        if sprite_cog:
+            sprite_data = await sprite_cog.get_pokemon_sprite(species_id, is_shiny)
+            if sprite_data:
+                with BytesIO(sprite_data) as sprite_buffer:
+                    file = discord.File(sprite_buffer, filename=f"{pokemon_data['name'].lower()}.png")
+                    embed.set_image(url=f"attachment://{pokemon_data['name'].lower()}.png")
+                    files.append(file)
+        
+        spawn_message = await channel.send(embed=embed, files=files)
+        
+        # Store active spawn by channel
+        if guild_id not in self.active_spawns:
+            self.active_spawns[guild_id] = {}
+        self.active_spawns[guild_id][channel.id] = {
+            'species_id': species_id,
+            'level': level,
+            'is_shiny': is_shiny,
+            'channel_id': channel.id,
+            'message': spawn_message
+        }
+    
+    async def spawn_pokemon_admin(self, channel, guild_id, species_id, level, is_shiny):
+        """Admin spawn using same logic as normal spawn"""
+        try:
+            if species_id not in POKEMON_DATA:
+                raise ValueError(f"Invalid species ID: {species_id}")
+            pokemon_data = POKEMON_DATA[species_id]
+        except (KeyError, ValueError) as e:
+            raise ValueError(f"Invalid Pokemon species ID: {species_id}") from e
+        
+        # Create spawn embed (same as normal spawn)
+        embed = discord.Embed(
+            title="A wild Pokemon appeared!",
+            description=f"A wild **{pokemon_data['name']}** (Level {level}) appeared!",
+            color=0xffd700 if is_shiny else 0x3498db
+        )
+        
+        if is_shiny:
+            embed.description += " ✨ **It's shiny!** ✨"
+            
+        embed.add_field(name="Type", value=f"{pokemon_data['type1']}" + (f"/{pokemon_data['type2']}" if pokemon_data['type2'] else ""), inline=True)
+        embed.add_field(name="Rarity", value=pokemon_data['rarity'].title(), inline=True)
+        embed.add_field(name="Catch", value="Use `/catch` to attempt capture!", inline=False)
+        
+        # Try to add Pokemon sprite (same as normal spawn)
+        sprite_cog = self.bot.get_cog('SpriteSystem')
+        files = []
+        if sprite_cog:
+            sprite_data = await sprite_cog.get_pokemon_sprite(species_id, is_shiny)
+            if sprite_data:
+                with BytesIO(sprite_data) as sprite_buffer:
+                    file = discord.File(sprite_buffer, filename=f"{pokemon_data['name'].lower()}.png")
+                    embed.set_image(url=f"attachment://{pokemon_data['name'].lower()}.png")
+                    files.append(file)
+        
+        spawn_message = await channel.send(embed=embed, files=files)
+        
+        # Store active spawn by channel (same as normal spawn)
+        if guild_id not in self.active_spawns:
+            self.active_spawns[guild_id] = {}
+        self.active_spawns[guild_id][channel.id] = {
+            'species_id': species_id,
+            'level': level,
+            'is_shiny': is_shiny,
+            'channel_id': channel.id,
+            'message': spawn_message
+        }
+        
+    @commands.hybrid_command(name="catch", description="Attempt to catch the spawned Pokemon")
+    @app_commands.describe(pokeball="Choose a pokeball type")
+    @app_commands.choices(pokeball=[
+        app_commands.Choice(name="Pokeball", value="pokeball"),
+        app_commands.Choice(name="Great Ball", value="greatball"),
+        app_commands.Choice(name="Ultra Ball", value="ultraball"),
+        app_commands.Choice(name="Master Ball", value="masterball")
+    ])
+    async def catch(self, ctx, pokeball: str = None):
+        guild_id = ctx.guild.id
+        user_id = ctx.author.id
+        
+        # Check if there's an active spawn in this channel
+        if guild_id not in self.active_spawns or ctx.channel.id not in self.active_spawns[guild_id]:
+            await ctx.send("There's no Pokemon to catch in this channel!", ephemeral=True)
+            return
+            
+        spawn_data = self.active_spawns[guild_id][ctx.channel.id]
+            
+        # Check if user exists
+        user = await self.bot.db.get_user(user_id)
+        if not user:
+            await ctx.send("You haven't started your journey yet! Use `/start` to begin.", ephemeral=True)
+            return
+            
+        # Use default pokeball if none specified
+        if not pokeball:
+            pokeball = user['default_pokeball']
+        else:
+            pokeball = pokeball.lower()
+            
+        # Validate pokeball type
+        valid_pokeballs = ["pokeball", "greatball", "ultraball", "masterball"]
+        if pokeball not in valid_pokeballs:
+            await ctx.send("Invalid pokeball type! Use: pokeball, greatball, ultraball, or masterball", ephemeral=True)
+            return
+            
+        # Check legendary restriction
+        if spawn_data['species_id'] not in POKEMON_DATA:
+            await ctx.send("Invalid Pokemon data!", ephemeral=True)
+            return
+        pokemon_data = POKEMON_DATA[spawn_data['species_id']]
+        if pokemon_data['rarity'] == 'legendary' and pokeball != 'masterball':
+            await ctx.send(f"Legendary Pokemon can only be caught with a Master Ball!", ephemeral=True)
+            return
+            
+        # Check if user has the pokeball
+        inventory = await self.bot.db.fetchrow(
+            "SELECT quantity FROM user_inventory WHERE user_id = $1 AND item_name = $2",
+            user_id, pokeball
+        )
+        
+        if not inventory or inventory['quantity'] <= 0:
+            await ctx.send(f"You don't have any {pokeball}s!", ephemeral=True)
+            return
+            
+        # Calculate catch rate
+        pokemon_data = POKEMON_DATA[spawn_data['species_id']]
+        
+        # Base catch rates by rarity (increased)
+        rarity_rates = {
+            "common": 0.85,
+            "uncommon": 0.65, 
+            "rare": 0.45,
+            "legendary": 0.15
+        }
+        
+        # Pokeball multipliers (increased)
+        pokeball_multipliers = {
+            "pokeball": 1.2,
+            "greatball": 1.8,
+            "ultraball": 2.5,
+            "masterball": 999.0  # Always catches
+        }
+        
+        base_rate = rarity_rates[pokemon_data['rarity']] * pokeball_multipliers[pokeball]
+        base_rate = min(1.0, base_rate)  # Cap at 100%
+        
+        # Check if user already caught this spawn
+        if guild_id in self.active_spawns and ctx.channel.id in self.active_spawns[guild_id] and 'caught_by' in self.active_spawns[guild_id][ctx.channel.id]:
+            if user_id in self.active_spawns[guild_id][ctx.channel.id]['caught_by']:
+                await ctx.send("You already caught this Pokemon!", ephemeral=True)
+                return
+        
+        # Attempt catch
+        if random.random() < base_rate:
+            # Success! Add Pokemon to user
+            pokemon_id = await self.bot.db.add_pokemon(
+                user_id, spawn_data['species_id'], spawn_data['level'], spawn_data['is_shiny']
+            )
+            
+            if pokemon_id is None:
+                await ctx.send("You've reached the maximum Pokemon limit (999)! Cannot catch more Pokemon.")
+                return
+            
+            # Remove pokeball from inventory
+            await self.bot.db.execute(
+                "UPDATE user_inventory SET quantity = quantity - 1 WHERE user_id = $1 AND item_name = $2",
+                user_id, pokeball
+            )
+            
+            # Mark as caught by this user
+            if 'caught_by' not in self.active_spawns[guild_id][ctx.channel.id]:
+                self.active_spawns[guild_id][ctx.channel.id]['caught_by'] = set()
+            self.active_spawns[guild_id][ctx.channel.id]['caught_by'].add(user_id)
+            
+            shiny_text = "✨ **Shiny** " if spawn_data['is_shiny'] else ""
+            embed = discord.Embed(
+                title="Gotcha!",
+                description=f"You caught the {shiny_text}**{pokemon_data['name']}**!",
+                color=0x00ff00
+            )
+            embed.add_field(name="Pokemon ID", value=f"#{pokemon_id}", inline=True)
+            embed.add_field(name="Level", value=spawn_data['level'], inline=True)
+            
+            await ctx.send(embed=embed)
+            
+        else:
+            # Failed catch
+            await self.bot.db.execute(
+                "UPDATE user_inventory SET quantity = quantity - 1 WHERE user_id = $1 AND item_name = $2",
+                user_id, pokeball
+            )
+            
+            await ctx.send(f"The {pokemon_data['name']} broke free! Try again with another pokeball.")
+            
+    @app_commands.command(name="setspawn", description="Set spawn and message channels (Admin only)")
+    @app_commands.describe(
+        monitor1="First channel to monitor for messages", monitor2="Second monitor channel (optional)", monitor3="Third monitor channel (optional)",
+        spawn1="First channel where Pokemon spawn", spawn2="Second spawn channel (optional)", spawn3="Third spawn channel (optional)"
+    )
+    async def setspawn(self, interaction: discord.Interaction, 
+                      monitor1: discord.TextChannel, spawn1: discord.TextChannel,
+                      monitor2: discord.TextChannel = None, spawn2: discord.TextChannel = None,
+                      monitor3: discord.TextChannel = None, spawn3: discord.TextChannel = None):
+        if not (interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild or interaction.user.guild_permissions.moderate_members or interaction.user.id == 408190648924110858):
+            await interaction.response.send_message("This command requires Administrator, Manage Server, or Moderate Members permissions!", ephemeral=True)
+            return
+            
+        monitor_channels = [monitor1]
+        spawn_channels = [spawn1]
+        
+        if monitor2:
+            monitor_channels.append(monitor2)
+        if monitor3:
+            monitor_channels.append(monitor3)
+        if spawn2:
+            spawn_channels.append(spawn2)
+        if spawn3:
+            spawn_channels.append(spawn3)
+            
+        monitor_ids = [channel.id for channel in monitor_channels]
+        spawn_ids = [channel.id for channel in spawn_channels]
+        
+        # Store both monitor and spawn channels in spawn_channels field with separator
+        # Format: [monitor_ids]|[spawn_ids]
+        combined_data = monitor_ids + [-1] + spawn_ids  # Use -1 as separator
+        
+        try:
+            await self.bot.db.execute(
+                """INSERT INTO server_config (guild_id, spawn_channels, message_count, messages_until_spawn)
+                   VALUES ($1, $2, 0, $3)
+                   ON CONFLICT (guild_id) DO UPDATE SET spawn_channels = $2""",
+                interaction.guild.id, combined_data, random.randint(10, 20)
+            )
+        except Exception as e:
+            await interaction.response.send_message("Database error occurred while updating spawn configuration!", ephemeral=True)
+            return
+        
+        monitor_mentions = ", ".join([channel.mention for channel in monitor_channels])
+        spawn_mentions = ", ".join([channel.mention for channel in spawn_channels])
+        await interaction.response.send_message(f"Monitor channels: {monitor_mentions}\nSpawn channels: {spawn_mentions}")
+
+async def setup(bot):
+    await bot.add_cog(Spawn(bot))
