@@ -3,6 +3,8 @@ from discord.ext import commands
 from discord import app_commands
 import random
 import asyncio
+import logging
+import aiohttp
 from data.complete_pokemon_data import COMPLETE_POKEMON_DATA as POKEMON_DATA
 from data.complete_moves_data import COMPLETE_MOVES_DATA as MOVES_DATA, SECONDARY_EFFECTS
 from data.complete_moves_data import TYPE_EFFECTIVENESS
@@ -348,8 +350,9 @@ class Battle(commands.Cog):
                             # No more NPC Pokemon - player wins, end battle immediately
                             result_text += "\nYou won the battle!"
                             battle_data['turn'] = None  # Clear turn to stop battle
-                            await self._end_battle(battle_data, attacker_data['id'])
+                            end_embed = await self._end_battle(battle_data, attacker_data['id'])
                             return_data['text'] = result_text
+                            return_data['end_embed'] = end_embed
                             return return_data
                     else:
                         # No gym battle data found - end battle
@@ -648,7 +651,7 @@ class Battle(commands.Cog):
         elif move_name == 'reflect':
             attacker_data['reflect'] = True
             return f"{attacker['name']} raised its Defense with Reflect!"
-            
+
         elif move_name == 'light_screen':
             attacker_data['light_screen'] = True
             return f"{attacker['name']} raised its Special with Light Screen!"
@@ -1161,22 +1164,25 @@ class Battle(commands.Cog):
         if valid_moves:
             chosen_move = self._choose_strategic_move(npc_data, battle_data, valid_moves)
             
-            # Execute move
-            result_data = await self.use_move(battle_data, npc_data['id'], chosen_move)
+            try:
+                # Execute move
+                result_data = await self.use_move(battle_data, npc_data['id'], chosen_move)
 
-            # Send result text
-            embed = discord.Embed(description=result_data.get('text', 'An error occurred.'), color=0x3498db)
-            await battle_data['channel'].send(embed=embed)
-            
-            # Send end embed if it exists
-            if result_data.get('end_embed'):
-                await asyncio.sleep(0.1)
-                await battle_data['channel'].send(embed=result_data['end_embed'])
+                # Send result text
+                embed = discord.Embed(description=result_data.get('text', 'An error occurred.'), color=0x3498db)
+                await battle_data['channel'].send(embed=embed)
 
-            # Continue battle if not ended and battle still exists
-            if npc_id in self.active_battles and battle_data.get('turn'):
-                await asyncio.sleep(1)
-                await self._send_battle_status(battle_data)
+                # Send end embed if it exists
+                if result_data.get('end_embed'):
+                    await asyncio.sleep(0.1)
+                    await battle_data['channel'].send(embed=result_data['end_embed'])
+
+                # Continue battle if not ended and battle still exists
+                if npc_id in self.active_battles and battle_data.get('turn'):
+                    await asyncio.sleep(1)
+                    await self._send_battle_status(battle_data)
+            except (discord.HTTPException, aiohttp.ClientOSError) as e:
+                logging.warning(f"Failed to send NPC turn message due to network error: {e}")
     
     async def _end_battle(self, battle_data, winner_id):
         # Handle gym battle completion
@@ -1342,39 +1348,44 @@ class BattleMoveView(discord.ui.View):
         if self.message:
             try:
                 await self.message.edit(view=self)
-            except discord.HTTPException:
-                pass  # Ignore Discord API errors for message editing
+            except (discord.HTTPException, aiohttp.ClientOSError) as e:
+                logging.warning(f"Failed to edit battle message on timeout due to network error: {e}")
+            except discord.NotFound:
+                pass # Message was deleted, no action needed.
                 
     def _create_move_callback(self, move_name):
         async def callback(interaction):
             if interaction.user.id != self.user_id:
                 await interaction.response.send_message("It's not your turn!", ephemeral=True)
                 return
-                
-            battle_cog = self.bot.get_cog('Battle')
-            result_data = await battle_cog.use_move(self.battle_data, self.user_id, move_name)
 
-            # Format the result into an embed for better readability
-            embed = discord.Embed(description=result_data.get('text', 'An error occurred.'), color=0x3498db)
-            await interaction.response.send_message(embed=embed)
+            try:
+                battle_cog = self.bot.get_cog('Battle')
+                result_data = await battle_cog.use_move(self.battle_data, self.user_id, move_name)
 
-            # If there's an end-of-battle embed, send it as a new message.
-            if result_data.get('end_embed'):
-                await asyncio.sleep(0.1)  # Ensure message order
-                await self.battle_data['channel'].send(embed=result_data['end_embed'])
-                return  # Battle is over, no need to send new status
-            
-            # Check if battle still exists (may have ended during move execution)
-            if self.user_id not in battle_cog.active_battles:
-                return
-            
-            # Small delay to ensure message order
-            await asyncio.sleep(0.1)
-            
-            # Only continue if battle still exists and has a valid turn
-            if self.user_id in battle_cog.active_battles and self.battle_data.get('turn') is not None:
-                await battle_cog._send_battle_status(self.battle_data)
+                # Format the result into an embed for better readability
+                embed = discord.Embed(description=result_data.get('text', 'An error occurred.'), color=0x3498db)
+                await interaction.response.send_message(embed=embed)
+
+                # If there's an end-of-battle embed, send it as a new message.
+                if result_data.get('end_embed'):
+                    await asyncio.sleep(0.1)  # Ensure message order
+                    await self.battle_data['channel'].send(embed=result_data['end_embed'])
+                    return  # Battle is over, no need to send new status
                 
+                # Check if battle still exists (may have ended during move execution)
+                if self.user_id not in battle_cog.active_battles:
+                    return
+
+                # Small delay to ensure message order
+                await asyncio.sleep(0.1)
+
+                # Only continue if battle still exists and has a valid turn
+                if self.user_id in battle_cog.active_battles and self.battle_data.get('turn') is not None:
+                    await battle_cog._send_battle_status(self.battle_data)
+            except (discord.HTTPException, aiohttp.ClientOSError) as e:
+                logging.warning(f"Failed to send move result message due to network error: {e}")
+
         return callback
         
     async def _switch_pokemon(self, interaction):
