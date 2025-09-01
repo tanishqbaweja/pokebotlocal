@@ -414,7 +414,8 @@ class Battle(commands.Cog):
         if defender['pokemon']['current_hp'] <= 0:
             battle_over, winner_id = self._check_battle_over(battle_data)
             if battle_over:
-                await battle_data['channel'].send("\n".join(turn_results))
+                embed = discord.Embed(title="Turn Results", description="\n".join(turn_results), color=0x3498db)
+                await battle_data['channel'].send(embed=embed)
                 await self._end_battle(battle_data, winner_id)
                 return
 
@@ -428,7 +429,8 @@ class Battle(commands.Cog):
             if defender['pokemon']['current_hp'] <= 0:
                 battle_over, winner_id = self._check_battle_over(battle_data)
                 if battle_over:
-                    await battle_data['channel'].send("\n".join(turn_results))
+                    embed = discord.Embed(title="Turn Results", description="\n".join(turn_results), color=0x3498db)
+                    await battle_data['channel'].send(embed=embed)
                     await self._end_battle(battle_data, winner_id)
                     return
 
@@ -443,12 +445,14 @@ class Battle(commands.Cog):
                         if p_data['pokemon']['current_hp'] <= 0:
                              battle_over, winner_id = self._check_battle_over(battle_data)
                              if battle_over:
-                                 await battle_data['channel'].send("\n".join(turn_results))
+                                 embed = discord.Embed(title="Turn Results", description="\n".join(turn_results), color=0x3498db)
+                                 await battle_data['channel'].send(embed=embed)
                                  await self._end_battle(battle_data, winner_id)
                                  return
 
         # Send turn results
-        await battle_data['channel'].send("\n".join(turn_results))
+        embed = discord.Embed(title="Turn Results", description="\n".join(turn_results), color=0x3498db)
+        await battle_data['channel'].send(embed=embed)
 
         # Reset for next turn
         battle_data['pending_moves'] = {}
@@ -1306,7 +1310,8 @@ class BattleMoveView(discord.ui.View):
 
             # Add the move to the pending queue
             self.battle_data['pending_moves'][self.user_id] = move_name
-            await interaction.response.send_message(f"You chose {move_name.replace('_', ' ').title()}! Waiting for opponent...", ephemeral=True)
+            # Acknowledge the interaction privately without sending a message
+            await interaction.response.defer(ephemeral=True)
 
             # Check if both moves are in
             battle_cog = self.bot.get_cog('Battle')
