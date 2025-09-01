@@ -216,6 +216,7 @@ class Battle(commands.Cog):
                 battle_data['turn'] = defender_data['id']
                 return result_text
             
+        move_name = move_name.lower().replace(' ', '_').replace('-', '_')
         move = MOVES_DATA.get(move_name)
         if not move:
             return "Invalid move!"
