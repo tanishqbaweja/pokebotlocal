@@ -276,7 +276,7 @@ class Battle(commands.Cog):
         # Check if Pokemon can move (status effects)
         status_cog = self.bot.get_cog('StatusEffects')
         if status_cog:
-            can_move, status_message = await status_cog.can_use_move(attacker_data)
+            can_move, status_message = status_cog.can_use_move(attacker_data)
             if not can_move:
                 battle_data['battle_text_log'].append(status_message)
                 battle_data['turn'] = defender_data['id']
