@@ -299,6 +299,23 @@ class Battle(commands.Cog):
         # End-of-turn effects and turn switching will be handled by _execute_turn
         return result_text
 
+    def _reset_battle_pokemon_stats(self, pokemon_data):
+        """Resets the volatile stats of a pokemon for a battle."""
+        pokemon_data['stats'] = {
+            'attack': 0, 'defense': 0, 'special': 0, 'speed': 0,
+            'accuracy': 0, 'evasion': 0
+        }
+        pokemon_data['status'] = None
+        pokemon_data['status_turns'] = 0
+        pokemon_data['confused'] = False
+        pokemon_data['confusion_turns'] = 0
+        pokemon_data['seeded'] = False
+        pokemon_data['substitute'] = 0
+        pokemon_data['transformed'] = False
+        pokemon_data['focus_energy'] = False
+        pokemon_data['disabled_move'] = None
+        pokemon_data['disable_turns'] = 0
+
     async def _handle_fainted_pokemon(self, defender_data, attacker_data, battle_data):
         """Handles the logic when a Pokemon faints."""
         result_text = ""
@@ -432,7 +449,7 @@ class Battle(commands.Cog):
 
         # Send turn results
         await battle_data['channel'].send("\n".join(turn_results))
-        
+
         # Reset for next turn
         battle_data['pending_moves'] = {}
         battle_data['turn'] = first_attacker['id'] # The one who went first starts the next turn select
