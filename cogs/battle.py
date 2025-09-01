@@ -192,7 +192,7 @@ class Battle(commands.Cog):
         battle_data['turn_timeout_task'] = asyncio.create_task(self._handle_turn_timeout(battle_data, current_user))
         battle_data['turn_start_time'] = asyncio.get_event_loop().time()
         
-    async def _calculate_move_effects(self, attacker_data, defender_data, move_name):
+    async def _calculate_move_effects(self, attacker_data, defender_data, move_name, battle_data):
         """Calculates the effects of a single move and returns the result text."""
         # This is a refactored version of use_move, focused on a single action.
 
@@ -390,7 +390,7 @@ class Battle(commands.Cog):
 
         # First attacker's move
         defender = second_attacker
-        result_text = await self._calculate_move_effects(first_attacker, defender, first_move)
+        result_text = await self._calculate_move_effects(first_attacker, defender, first_move, battle_data)
         turn_results.append(result_text)
 
         # Check if defender fainted
@@ -404,7 +404,7 @@ class Battle(commands.Cog):
         # Second attacker's move
         if not battle_over:
             defender = first_attacker
-            result_text = await self._calculate_move_effects(second_attacker, defender, second_move)
+            result_text = await self._calculate_move_effects(second_attacker, defender, second_move, battle_data)
             turn_results.append(result_text)
 
             # Check if defender fainted
