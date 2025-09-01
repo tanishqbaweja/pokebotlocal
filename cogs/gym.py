@@ -296,27 +296,14 @@ class Gym(commands.Cog):
         
 
             
-    async def _handle_gym_victory(self, gym_battle_data):
-        # Find player ID and channel from gym battle data
-        player_id = None
-        channel = None
-        battle_cog = self.bot.get_cog('Battle')
-
-        # Find the specific player's battle
-        for user_id in list(self.active_gym_battles.keys()):
-            if user_id in battle_cog.active_battles:
-                battle_data = battle_cog.active_battles[user_id]
-                if battle_data.get('challenger', {}).get('id') == user_id or battle_data.get('opponent', {}).get('id') == user_id:
-                    player_id = user_id
-                    channel = battle_data['channel']
-                    break
-
-        if not player_id:
-            return
-
-        user_id = player_id
+    async def _handle_gym_victory(self, gym_battle_data, battle_data):
+        player_id = battle_data['challenger']['id'] if battle_data['challenger']['id'] > 0 else battle_data['opponent']['id']
+        channel = battle_data.get('channel')
         is_rematch = gym_battle_data.get('is_rematch', False)
         
+        # Define embed before using it
+        embed = None
+
         if gym_battle_data['type'] == 'gym':
             leader_data = GYM_LEADERS[gym_battle_data['leader']]
             reward = leader_data['reward']
@@ -325,7 +312,7 @@ class Gym(commands.Cog):
             if not is_rematch:
                 await self.bot.db.execute(
                     "UPDATE users SET badges = badges + 1, money = money + $1 WHERE user_id = $2",
-                    reward, user_id
+                    reward, player_id
                 )
                 embed = discord.Embed(
                     title="Victory!",
@@ -348,7 +335,7 @@ class Gym(commands.Cog):
             if not is_rematch:
                 await self.bot.db.execute(
                     "UPDATE users SET badges = badges + 1, money = money + $1 WHERE user_id = $2",
-                    reward, user_id
+                    reward, player_id
                 )
                 embed = discord.Embed(
                     title="Elite Four Victory!",
@@ -370,7 +357,7 @@ class Gym(commands.Cog):
             if not is_rematch:
                 await self.bot.db.execute(
                     "UPDATE users SET badges = badges + 1, money = money + $1 WHERE user_id = $2",
-                    reward, user_id
+                    reward, player_id
                 )
                 embed = discord.Embed(
                     title="CHAMPION!",
@@ -386,30 +373,36 @@ class Gym(commands.Cog):
                 )
                 embed.add_field(name="Reward", value="No rewards for rematches", inline=True)
 
-        if channel:
+        # Record first-time completion
+        if not is_rematch and battle_data.get('is_first_completion'):
+            opponent_id = battle_data['opponent']['id']
+            npc_type = abs(opponent_id) // 1000
+            npc_index = abs(opponent_id) % 1000
+            try:
+                await self.bot.db.execute(
+                    """INSERT INTO npc_completions (user_id, npc_type, npc_index, completed_at)
+                       VALUES ($1, $2, $3, NOW()) ON CONFLICT DO NOTHING""",
+                    player_id, npc_type, npc_index
+                )
+            except Exception as e:
+                import logging
+                logging.info(f"NPC completion tracking failed (table may not exist): {e}")
+
+        if channel and embed:
             await channel.send(embed=embed)
         
-        # Clean up
-        if user_id in self.active_gym_battles:
-            del self.active_gym_battles[user_id]
+        # Clean up this cog's state
+        if player_id in self.active_gym_battles:
+            del self.active_gym_battles[player_id]
         
-    async def _handle_player_loss(self, gym_battle_data):
-        # Find player ID and channel from gym battle data
-        player_id = None
-        channel = None
+        # Call back to battle cog for final cleanup
         battle_cog = self.bot.get_cog('Battle')
+        if battle_cog:
+            await battle_cog.final_cleanup(battle_data)
 
-        # Find the specific player's battle
-        for user_id in list(self.active_gym_battles.keys()):
-            if user_id in battle_cog.active_battles:
-                battle_data = battle_cog.active_battles[user_id]
-                if battle_data.get('challenger', {}).get('id') == user_id or battle_data.get('opponent', {}).get('id') == user_id:
-                    player_id = user_id
-                    channel = battle_data['channel']
-                    break
-                
-        if not player_id:
-            return
+    async def _handle_player_loss(self, gym_battle_data, battle_data):
+        player_id = battle_data['challenger']['id'] if battle_data['challenger']['id'] > 0 else battle_data['opponent']['id']
+        channel = battle_data.get('channel')
             
         embed = discord.Embed(
             title="Defeat...",
@@ -420,212 +413,15 @@ class Gym(commands.Cog):
         if channel:
             await channel.send(embed=embed)
 
-        # Clean up
+        # Clean up this cog's state
         if player_id in self.active_gym_battles:
             del self.active_gym_battles[player_id]
 
-    def _calculate_damage(self, attacker, defender, move_name):
-        if move_name not in MOVES_DATA:
-            return random.randint(10, 20)
+        # Call back to battle cog for final cleanup
+        battle_cog = self.bot.get_cog('Battle')
+        if battle_cog:
+            await battle_cog.final_cleanup(battle_data)
 
-        move = MOVES_DATA[move_name]
-        if move['power'] == 0:
-            return 0
-
-        attacker_species = POKEMON_DATA[attacker['species_id']]
-        defender_species = POKEMON_DATA[defender['species_id']]
-
-        # Gen 1 damage formula
-        level = attacker['level']
-
-        if move['category'] == 'physical':
-            attack = self._calculate_stat(attacker_species['base_attack'], attacker.get('attack_iv', 10), level)
-            defense = self._calculate_stat(defender_species['base_defense'], defender.get('defense_iv', 10), defender['level'])
-        else:
-            attack = self._calculate_stat(attacker_species['base_special'], attacker.get('special_iv', 10), level)
-            defense = self._calculate_stat(defender_species['base_special'], defender.get('special_iv', 10), defender['level'])
-
-        # Gen 1 formula: ((((2 * Level + 10) / 250) * (Attack / Defense) * Base) + 2) * Modifiers
-        damage = (((2 * level + 10) / 250) * (attack / defense) * move['power'] + 2)
-
-        # STAB (Same Type Attack Bonus)
-        if (move['type'].lower() == attacker_species['type1'].lower() or
-            (attacker_species.get('type2') and move['type'].lower() == attacker_species['type2'].lower())):
-            damage *= 1.5
-
-        # Type effectiveness
-        effectiveness = self._get_move_effectiveness(move_name, defender['species_id'])
-        damage *= effectiveness
-
-        # Gen 1 random factor (217-255)/255
-        random_factor = random.randint(217, 255) / 255
-        damage *= random_factor
-
-        return max(1, int(damage))
-
-    def _get_move_effectiveness(self, move_name, defender_species_id):
-        """Calculate type effectiveness for a move against a defender"""
-        if move_name not in MOVES_DATA:
-            return 1.0
-
-        move = MOVES_DATA[move_name]
-        defender_species = POKEMON_DATA[defender_species_id]
-
-        effectiveness = 1.0
-        if move['type'].lower() in TYPE_EFFECTIVENESS:
-            if defender_species['type1'].lower() in TYPE_EFFECTIVENESS[move['type'].lower()]:
-                effectiveness *= TYPE_EFFECTIVENESS[move['type'].lower()][defender_species['type1'].lower()]
-            if defender_species.get('type2') and defender_species['type2'].lower() in TYPE_EFFECTIVENESS[move['type'].lower()]:
-                effectiveness *= TYPE_EFFECTIVENESS[move['type'].lower()][defender_species['type2'].lower()]
-
-        return effectiveness
-
-    def _calculate_stat(self, base_stat, iv, level):
-        return int(((base_stat + iv) * 2 * level / 100) + 5)
-
-    def _calculate_max_hp(self, pokemon):
-        species = POKEMON_DATA[pokemon['species_id']]
-        return ((species['base_hp'] + pokemon.get('hp_iv', 10)) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
-
-    def _choose_best_move(self, attacker, defender, moves):
-        """Gen 1 AI: Simple effectiveness-based selection"""
-        valid_moves = [m for m in moves if m and m in MOVES_DATA]
-        if not valid_moves:
-            return "tackle"
-
-        # Filter out status moves (Gen 1 AI rarely used them)
-        damage_moves = [m for m in valid_moves if MOVES_DATA[m]['power'] > 0]
-        if not damage_moves:
-            return random.choice(valid_moves)
-
-        # Find super effective moves
-        super_effective = []
-        for move_name in damage_moves:
-            effectiveness = self._get_move_effectiveness(move_name, defender['species_id'])
-            if effectiveness > 1.0:
-                super_effective.append(move_name)
-
-        # Gen 1 AI: Use super effective move if available, otherwise random
-        if super_effective:
-            return random.choice(super_effective)
-        else:
-            return random.choice(damage_moves)
-
-    async def _handle_gym_timeout(self, battle_data, user_id):
-        """Handle 3-minute gym battle timeout"""
-        await asyncio.sleep(180)  # 3 minutes
-
-        if user_id in self.active_gym_battles:
-            embed = discord.Embed(
-                title="Battle Timeout!",
-                description="You took too long to make a move. Battle ended.",
-                color=0xff0000
-            )
-            
-            await battle_data['channel'].send(embed=embed)
-            del self.active_gym_battles[user_id]
-
-class GymMoveView(discord.ui.View):
-    def __init__(self, bot, battle_data):
-        super().__init__(timeout=180)
-        self.bot = bot
-        self.battle_data = battle_data
-
-        pokemon = battle_data['player']['pokemon']
-        moves = [pokemon['move1'], pokemon['move2'], pokemon['move3'], pokemon['move4']]
-
-        for i, move in enumerate(moves):
-            if move:
-                button = discord.ui.Button(label=move.replace('_', ' ').title(), custom_id=f"gym_move_{i}")
-                button.callback = self._create_move_callback(move)
-                self.add_item(button)
-
-        # Add switch Pokemon button - assume user has other Pokemon for now
-        # Will be validated when button is clicked
-        switch_button = discord.ui.Button(label="Switch Pokemon", style=discord.ButtonStyle.secondary, custom_id="switch")
-        switch_button.callback = self._switch_pokemon
-        self.add_item(switch_button)
-
-    def _create_move_callback(self, move_name):
-        async def callback(interaction):
-            if interaction.user.id != self.battle_data['player']['id']:
-                await interaction.response.send_message("Not your battle!", ephemeral=True)
-                return
-
-            gym_cog = self.bot.get_cog('Gym')
-            result = await gym_cog.use_gym_move(self.battle_data, move_name)
-
-            try:
-                await interaction.response.send_message(result)
-            except discord.HTTPException:
-                await self.battle_data['channel'].send(result)
-
-            # Handle NPC faint after showing move result
-            if self.battle_data.get('npc_fainted'):
-                del self.battle_data['npc_fainted']
-                await gym_cog._handle_npc_faint(self.battle_data)
-            elif self.battle_data['player']['id'] in gym_cog.active_gym_battles:
-                await gym_cog._send_gym_battle_status(self.battle_data)
-
-        return callback
-
-    async def _switch_pokemon(self, interaction):
-        if interaction.user.id != self.battle_data['player']['id']:
-            await interaction.response.send_message("It's not your turn!", ephemeral=True)
-            return
-
-        # Show Pokemon selection
-        view = GymPokemonSwitchView(self.bot, self.battle_data, interaction.user.id)
-        await view.setup_buttons()
-        await interaction.response.send_message("Choose a Pokemon to switch to:", view=view, ephemeral=True)
-
-class GymPokemonSwitchView(discord.ui.View):
-    def __init__(self, bot, battle_data, user_id):
-        super().__init__(timeout=60)
-        self.bot = bot
-        self.battle_data = battle_data
-        self.user_id = user_id
-
-    async def setup_buttons(self):
-        # Get party and add buttons
-        party = await self.bot.db.get_user_pokemon(self.user_id, in_party=True)
-        current_pokemon = self.battle_data['player']['pokemon']
-
-        for i, pokemon in enumerate(party):
-            if pokemon['current_hp'] > 0 and pokemon['id'] != current_pokemon['id']:
-                from data.complete_pokemon_data import COMPLETE_POKEMON_DATA
-                species = COMPLETE_POKEMON_DATA[pokemon['species_id']]
-                button = discord.ui.Button(
-                    label=f"{species['name']} (Lv.{pokemon['level']})",
-                    custom_id=f"gym_switch_{i}"
-                )
-                button.callback = self._create_switch_callback(i)
-                self.add_item(button)
-
-    def _create_switch_callback(self, pokemon_index):
-        async def callback(interaction):
-            if interaction.user.id != self.user_id:
-                await interaction.response.send_message("Not your Pokemon!", ephemeral=True)
-                return
-
-            # Get fresh party data
-            party = await self.bot.db.get_user_pokemon(self.user_id, in_party=True)
-            new_pokemon = party[pokemon_index]
-
-            # Switch Pokemon
-            self.battle_data['player']['pokemon'] = dict(new_pokemon)
-
-            from data.complete_pokemon_data import COMPLETE_POKEMON_DATA
-            species = COMPLETE_POKEMON_DATA[new_pokemon['species_id']]
-
-            # Switch turn to NPC
-            self.battle_data['turn'] = 'npc'
-            await interaction.response.send_message(f"Switched to {species['name']}!")
-
-            gym_cog = self.bot.get_cog('Gym')
-            await gym_cog._send_gym_battle_status(self.battle_data)
-
-        return callback
 
 async def setup(bot):
     await bot.add_cog(Gym(bot))

@@ -6,6 +6,25 @@ import asyncio
 from data.complete_pokemon_data import COMPLETE_POKEMON_DATA as POKEMON_DATA
 from data.complete_moves_data import COMPLETE_MOVES_DATA as MOVES_DATA, SECONDARY_EFFECTS
 from data.complete_moves_data import TYPE_EFFECTIVENESS
+from data.gym_data import GYM_LEADERS, ELITE_FOUR, CHAMPION
+
+# This dictionary will make lookups faster for NPC names
+NPC_NAME_MAP = {
+    -(1000 + list(GYM_LEADERS.keys()).index(name)): data['name']
+    for name, data in GYM_LEADERS.items()
+}
+NPC_NAME_MAP.update({
+    -(2000 + list(ELITE_FOUR.keys()).index(name)): data['name']
+    for name, data in ELITE_FOUR.items()
+})
+NPC_NAME_MAP[-3000] = CHAMPION['blue']['name']
+
+def get_display_name(user_id):
+    """Gets the display name for a user or NPC."""
+    if user_id < 0:
+        return NPC_NAME_MAP.get(user_id, "NPC")
+    return f"<@{user_id}>"
+
 
 class Battle(commands.Cog):
     def __init__(self, bot):
@@ -108,7 +127,10 @@ class Battle(commands.Cog):
             'opponent': {'id': opponent_id, 'pokemon': opponent_pokemon, 'party': opponent_party, 'current_index': 0, 'stats': {}},
             'turn': challenger_id,
             'channel': channel,
-            'server_id': channel.guild.id
+            'server_id': channel.guild.id,
+            'battle_text_log': [],
+            'battle_log_message': None,
+            'message': None
         }
         
         # Add first completion flag for NPC battles
@@ -140,8 +162,9 @@ class Battle(commands.Cog):
         self.active_battles[opponent_id] = battle_data
         
         await self._send_battle_status(battle_data)
+        await self._send_battle_log_embed(battle_data)
         
-    async def _send_battle_status(self, battle_data, result_text=None):
+    async def _send_battle_status(self, battle_data):
         challenger_pokemon = battle_data['challenger']['pokemon']
         opponent_pokemon = battle_data['opponent']['pokemon']
         
@@ -164,12 +187,10 @@ class Battle(commands.Cog):
             value=f"HP: {opponent_pokemon['current_hp']}/{self._calculate_max_hp(opponent_pokemon)} ({o_hp_percent:.0f}%)\n{o_status_text}",
             inline=True
         )
-        
-        if result_text:
-            embed.add_field(name="Results", value=result_text, inline=False)
 
         current_user = battle_data['turn']
-        embed.add_field(name="Turn", value=f"<@{current_user}>'s turn", inline=False)
+        turn_display_name = get_display_name(current_user)
+        embed.add_field(name="Turn", value=f"{turn_display_name}'s turn", inline=False)
 
         view = BattleMoveView(self.bot, battle_data, current_user)
 
@@ -182,19 +203,65 @@ class Battle(commands.Cog):
         view.message = battle_data['message']
 
         if current_user < 0:
-            await self._handle_npc_turn(battle_data)
+            if not battle_data.get('npc_turn_active', False):
+                asyncio.create_task(self._handle_npc_turn(battle_data))
         
         # Set turn timeout
         if battle_data.get('turn_timeout_task'):
             battle_data['turn_timeout_task'].cancel()
-        battle_data['turn_timeout_task'] = asyncio.create_task(self._handle_turn_timeout(battle_data, current_user))
-        battle_data['turn_start_time'] = asyncio.get_event_loop().time()
+
+        if battle_data.get('turn') is not None:
+            battle_data['turn_timeout_task'] = asyncio.create_task(self._handle_turn_timeout(battle_data, current_user))
+            battle_data['turn_start_time'] = asyncio.get_event_loop().time()
+
+    async def _send_battle_log_embed(self, battle_data):
+        if not battle_data['battle_text_log']:
+            return
+
+        log_content = "\n".join(battle_data['battle_text_log'])
+        if len(log_content) > 4000:
+            log_content = "...\n" + log_content[-4000:]
+
+        embed = discord.Embed(
+            title="Battle Log",
+            description=log_content,
+            color=discord.Color.dark_grey()
+        )
+
+        if not battle_data.get('battle_log_message'):
+            message = await battle_data['channel'].send(embed=embed)
+            battle_data['battle_log_message'] = message
+        else:
+            try:
+                await battle_data['battle_log_message'].edit(embed=embed)
+            except discord.NotFound:
+                message = await battle_data['channel'].send(embed=embed)
+                battle_data['battle_log_message'] = message
         
+    def _reset_battle_pokemon_stats(self, pokemon_data):
+        """Resets the volatile stats of a Pokemon for battle."""
+        pokemon_data['stats'] = {
+            'attack': 0, 'defense': 0, 'special': 0, 'speed': 0,
+            'accuracy': 0, 'evasion': 0
+        }
+        pokemon_data['status'] = None
+        pokemon_data['status_turns'] = 0
+        pokemon_data['confused'] = False
+        pokemon_data['confusion_turns'] = 0
+        pokemon_data['seeded'] = False
+        pokemon_data['substitute'] = 0
+        pokemon_data['transformed'] = False
+        pokemon_data['focus_energy'] = False
+        pokemon_data['disabled_move'] = None
+        pokemon_data['disable_turns'] = 0
+        return pokemon_data
+
     async def use_move(self, battle_data, user_id, move_name):
         if battle_data['turn'] != user_id:
-            return "It's not your turn!"
+            # This should not be sent to the user, but logged. For now, we just ignore.
+            return
 
-        # Cancel timeout task
+        # Cancel timeout task for the current turn
         if battle_data.get('turn_timeout_task'):
             battle_data['turn_timeout_task'].cancel()
 
@@ -209,204 +276,151 @@ class Battle(commands.Cog):
         # Check if Pokemon can move (status effects)
         status_cog = self.bot.get_cog('StatusEffects')
         if status_cog:
-            can_move, status_message = status_cog.can_use_move(attacker_data)
+            can_move, status_message = await status_cog.can_use_move(attacker_data)
             if not can_move:
-                result_text = status_message
+                battle_data['battle_text_log'].append(status_message)
                 battle_data['turn'] = defender_data['id']
-                return result_text
+                return # End turn here
             
         move = MOVES_DATA.get(move_name)
         if not move:
-            return "Invalid move!"
-            
-        result_text = f"{attacker_data['pokemon']['name']} used {move_name.replace('_', ' ').title()}!\n"
+            battle_data['battle_text_log'].append("Invalid move!")
+            return
+
+        attacker_name = get_display_name(attacker_data['id'])
+        battle_data['battle_text_log'].append(f"{attacker_name}'s {attacker_data['pokemon']['name']} used {move_name.replace('_', ' ').title()}!")
         
-        # Check move accuracy first (only for non-status moves)
-        if move['category'] != 'status' and not self._check_move_accuracy(move, attacker_data, defender_data):
-            result_text += "The attack missed!"
+        # Check move accuracy
+        if move.get('accuracy', 101) < 101 and not self._check_move_accuracy(move, attacker_data, defender_data):
+            battle_data['battle_text_log'].append("The attack missed!")
             battle_data['turn'] = defender_data['id']
-            return result_text
-        
-        # Handle status moves
+            return
+
+        # Handle move effects
         if move['category'] == 'status':
             status_result = await self._handle_status_move(battle_data, attacker_data, defender_data, move_name)
-            result_text += status_result
-            
-            # Store last move used for Disable/Mimic
-            attacker_data['pokemon'] = dict(attacker_data['pokemon'])
-            attacker_data['pokemon']['last_move_used'] = move_name
-            
-            # Check if status move caused fainting (like Selfdestruct used as status)
-            if defender_data['pokemon']['current_hp'] <= 0:
-                result_text += f"\n{defender_data['pokemon']['name']} fainted!"
-                
-                # Award experience for defeating opponent Pokemon (only for real Pokemon, not NPCs)
-                if attacker_data['pokemon']['id'] > 0:
-                    experience_cog = self.bot.get_cog('Experience')
-                    if experience_cog:
-                        base_exp = POKEMON_DATA[defender_data['pokemon']['species_id']].get('base_experience', 75)
-                        exp_gained = int((base_exp * defender_data['pokemon']['level']) / 7)
-
-                        if exp_gained > 0:
-                            await experience_cog._add_experience(attacker_data['pokemon'], exp_gained, battle_data['channel'])
-                            result_text += f"\n{attacker_data['pokemon']['name']} gained {exp_gained} experience!"
-        else:
-            # Calculate damage for attacking moves
+            if status_result:
+                battle_data['battle_text_log'].append(status_result)
+        else: # Physical or Special moves
             damage = self._calculate_damage(attacker_data, defender_data, move_name)
             
-            # Calculate new HP and update database (only for real Pokemon, not NPCs)
-            new_hp = max(0, defender_data['pokemon']['current_hp'] - damage)
-            if defender_data['pokemon']['id'] > 0:  # Only update database for real Pokemon
-                await self.bot.db.execute(
-                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                    new_hp, defender_data['pokemon']['id']
-                )
-            
-            # Update battle data with new HP
-            defender_data['pokemon'] = dict(defender_data['pokemon'])
-            defender_data['pokemon']['current_hp'] = new_hp
-            
-            # Get effectiveness for message
             effectiveness = self._get_type_effectiveness(move, defender_data['pokemon'])
             
             if damage > 0:
-                result_text += f"It dealt {damage} damage!"
-                if effectiveness >= 4:
-                    result_text += "\nIt's incredibly effective!"
-                elif effectiveness >= 2:
-                    result_text += "\nIt's super effective!"
-                elif effectiveness <= 0.25:
-                    result_text += "\nIt's barely effective!"
-                elif effectiveness <= 0.5:
-                    result_text += "\nIt's not very effective..."
+                battle_data['battle_text_log'].append(f"It dealt {damage} damage!")
+                if effectiveness >= 2:
+                    battle_data['battle_text_log'].append("It's super effective!")
+                elif effectiveness <= 0.5 and effectiveness > 0:
+                    battle_data['battle_text_log'].append("It's not very effective...")
             elif effectiveness == 0:
-                result_text += f"\n{defender_data['pokemon']['name']} is immune to that attack!"
+                battle_data['battle_text_log'].append(f"It doesn't affect {defender_data['pokemon']['name']}...")
             else:
-                result_text += "\nIt had no effect!"
+                battle_data['battle_text_log'].append("It had no effect!")
                 
-            # Check for secondary effects on attacking moves
+            # Apply damage
+            new_hp = max(0, defender_data['pokemon']['current_hp'] - damage)
+            if defender_data['pokemon']['id'] > 0:
+                await self.bot.db.execute("UPDATE pokemon SET current_hp = $1 WHERE id = $2", new_hp, defender_data['pokemon']['id'])
+            defender_data['pokemon'] = dict(defender_data['pokemon'])
+            defender_data['pokemon']['current_hp'] = new_hp
+
+            # Check for secondary effects
             secondary_effect = self._check_secondary_effects(move_name, defender_data)
             if secondary_effect:
-                result_text += f"\n{secondary_effect}"
-                
-            # Store last move used for Disable/Mimic
-            attacker_data['pokemon'] = dict(attacker_data['pokemon'])
-            attacker_data['pokemon']['last_move_used'] = move_name
-                
-            # Check if Pokemon fainted
-            if defender_data['pokemon']['current_hp'] <= 0:
-                result_text += f"\n{defender_data['pokemon']['name']} fainted!"
-                
-                # Award experience for defeating opponent Pokemon (only for real Pokemon, not NPCs)
-                if attacker_data['pokemon']['id'] > 0:
-                    exp_gained = (defender_data['pokemon']['level'] * 50) // attacker_data['pokemon']['level']
-                    if exp_gained > 0:
-                        experience_cog = self.bot.get_cog('Experience')
-                        if experience_cog:
-                            await experience_cog._add_experience(attacker_data['pokemon'], exp_gained, battle_data['channel'])
-                            result_text += f"\n{attacker_data['pokemon']['name']} gained {exp_gained} experience!"
-                
-                # Handle Pokemon switching (NPC or Player)
-                if defender_data['id'] < 0:
-                    # NPC Pokemon fainted - get next from gym team
-                    gym_cog = self.bot.get_cog('Gym')
-                    player_id = attacker_data['id']
-                    if gym_cog and player_id in gym_cog.active_gym_battles:
-                        gym_battle = gym_cog.active_gym_battles[player_id]
-                        gym_battle['npc_team_index'] += 1
+                battle_data['battle_text_log'].append(secondary_effect)
 
-                        if gym_battle['npc_team_index'] < len(gym_battle['npc_team']):
-                            # Create next NPC Pokemon
-                            next_npc_data = gym_battle['npc_team'][gym_battle['npc_team_index']]
-                            next_pokemon = gym_cog._create_npc_pokemon(next_npc_data)
-                            defender_data['pokemon'] = dict(next_pokemon)
+        # Store last move used for Disable/Mimic
+        attacker_data['pokemon']['last_move_used'] = move_name
 
-                            # Reset NPC status effects for new Pokemon
-                            defender_data['stats'] = {
-                                'attack': 0, 'defense': 0, 'special': 0, 'speed': 0,
-                                'accuracy': 0, 'evasion': 0
-                            }
-                            defender_data['status'] = None
-                            defender_data['status_turns'] = 0
-                            defender_data['confused'] = False
-                            defender_data['confusion_turns'] = 0
-                            defender_data['seeded'] = False
-                            defender_data['substitute'] = 0
-
-                            result_text += f"\nEnemy sent out {next_pokemon['name']}!"
-                            battle_data['turn'] = defender_data['id']  # NPC's turn with new Pokemon
-                            return result_text
-                        else:
-                            # No more NPC Pokemon - player wins, end battle immediately
-                            result_text += "\nYou won the battle!"
-                            battle_data['turn'] = None  # Clear turn to stop battle
-                            await self._end_battle(battle_data, attacker_data['id'])
-                            return result_text
-                    else:
-                        # No gym battle data found - end battle
-                        await self._end_battle(battle_data, attacker_data['id'])
-                        return result_text
-                else:
-                    # Player Pokemon fainted - get fresh party data
-                    fresh_party = await self.bot.db.get_user_pokemon(defender_data['id'], in_party=True)
-                    available_pokemon = [p for p in fresh_party if p['current_hp'] > 0]
-
-                    if len(available_pokemon) == 0:  # No Pokemon left
-                        await self._end_battle(battle_data, attacker_data['id'])
-                        return result_text
-                    else:
-                        # Auto-send next available Pokemon
-                        next_pokemon = available_pokemon[0]
-                        defender_data['pokemon'] = dict(next_pokemon)
-                        defender_data['party'] = fresh_party  # Update cached party
-                        for i, p in enumerate(fresh_party):
-                            if p['id'] == next_pokemon['id']:
-                                defender_data['current_index'] = i
-                                break
-                        # Reset status effects for new Pokemon
-                        defender_data['stats'] = {
-                            'attack': 0, 'defense': 0, 'special': 0, 'speed': 0,
-                            'accuracy': 0, 'evasion': 0
-                        }
-                        defender_data['status'] = None
-                        defender_data['status_turns'] = 0
-                        defender_data['confused'] = False
-                        defender_data['confusion_turns'] = 0
-                        defender_data['seeded'] = False
-                        defender_data['substitute'] = 0
-
-                        result_text += f"\n<@{defender_data['id']}> sent out {next_pokemon['name']}!"
-                        # Keep turn with same player when Pokemon faints (forced switch)
-                        return result_text
+        # Check for fainted Pokemon
+        if defender_data['pokemon']['current_hp'] <= 0:
+            battle_data['battle_text_log'].append(f"{defender_data['pokemon']['name']} fainted!")
             
-        # Apply end-of-turn status effects
+            # Handle post-faint logic
+            await self._handle_fainting(attacker_data, defender_data, battle_data)
+            return # Stop here, _handle_fainting will manage turn change or battle end
+
+        # If defender didn't faint, apply end-of-turn effects
         if status_cog:
-            # Apply to attacker
+            # Apply to attacker first
             attacker_status_result = status_cog.apply_status_damage(attacker_data, battle_data)
             if attacker_status_result:
-                result_text += f"\n{attacker_status_result}"
-                # Update database if HP changed (only for real Pokemon)
+                battle_data['battle_text_log'].append(attacker_status_result)
                 if attacker_data['pokemon']['id'] > 0:
-                    await self.bot.db.execute(
-                        "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                        attacker_data['pokemon']['current_hp'], attacker_data['pokemon']['id']
-                    )
+                    await self.bot.db.execute("UPDATE pokemon SET current_hp = $1 WHERE id = $2", attacker_data['pokemon']['current_hp'], attacker_data['pokemon']['id'])
+
+                # Check if attacker fainted from status
+                if attacker_data['pokemon']['current_hp'] <= 0:
+                    battle_data['battle_text_log'].append(f"{attacker_data['pokemon']['name']} fainted!")
+                    await self._handle_fainting(defender_data, attacker_data, battle_data) # Note: attacker/defender swapped
+                    # If battle is not over, it's now the other player's turn
+                    if battle_data.get('turn') is not None:
+                         battle_data['turn'] = defender_data['id']
+                    return # End turn processing
 
             # Apply to defender
             defender_status_result = status_cog.apply_status_damage(defender_data, battle_data)
             if defender_status_result:
-                result_text += f"\n{defender_status_result}"
-                # Update database if HP changed (only for real Pokemon)
+                battle_data['battle_text_log'].append(defender_status_result)
                 if defender_data['pokemon']['id'] > 0:
-                    await self.bot.db.execute(
-                        "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                        defender_data['pokemon']['current_hp'], defender_data['pokemon']['id']
-                    )
-                
-        # Switch turns (only if no Pokemon fainted)
-        if defender_data['pokemon']['current_hp'] > 0:
+                    await self.bot.db.execute("UPDATE pokemon SET current_hp = $1 WHERE id = $2", defender_data['pokemon']['current_hp'], defender_data['pokemon']['id'])
+
+                # Check if defender fainted from status
+                if defender_data['pokemon']['current_hp'] <= 0:
+                    battle_data['battle_text_log'].append(f"{defender_data['pokemon']['name']} fainted!")
+                    await self._handle_fainting(attacker_data, defender_data, battle_data)
+                    # Turn does NOT switch here. Attacker gets to move against new pokemon.
+                    return # End turn processing
+
+        # If we reach here, no one fainted from status effects, so switch turns.
+        if battle_data.get('turn') is not None:
             battle_data['turn'] = defender_data['id']
-        return result_text
+
+    async def _handle_fainting(self, attacker_data, defender_data, battle_data):
+        """Handles logic after a Pokemon faints."""
+        # Experience gain
+        if attacker_data['id'] > 0 and defender_data['pokemon'].get('level'):
+            experience_cog = self.bot.get_cog('Experience')
+            if experience_cog:
+                # Corrected experience calculation based on original code
+                exp_gained = (defender_data['pokemon']['level'] * 50) // attacker_data['pokemon']['level']
+                if exp_gained > 0:
+                    # Note: _add_experience handles the DB update and level up check
+                    await experience_cog._add_experience(attacker_data['pokemon'], exp_gained, battle_data['channel'])
+                    battle_data['battle_text_log'].append(f"{attacker_data['pokemon']['name']} gained {exp_gained} experience!")
+
+        # Check if defender has any pokemon left
+        if defender_data['id'] < 0: # NPC defender
+            gym_cog = self.bot.get_cog('Gym')
+            if gym_cog and attacker_data['id'] in gym_cog.active_gym_battles:
+                gym_battle = gym_cog.active_gym_battles[attacker_data['id']]
+                gym_battle['npc_team_index'] += 1
+
+                if gym_battle['npc_team_index'] < len(gym_battle['npc_team']):
+                    # Send out next NPC Pokemon
+                    next_npc_data = gym_battle['npc_team'][gym_battle['npc_team_index']]
+                    next_pokemon = gym_cog._create_npc_pokemon(next_npc_data)
+                    defender_data['pokemon'] = dict(next_pokemon)
+                    # Reset stats for new Pokemon
+                    # ... (reset logic) ...
+                    battle_data['battle_text_log'].append(f"{get_display_name(defender_data['id'])} sent out {next_pokemon['name']}!")
+                    # Player gets to attack again, turn does not change
+                else:
+                    await self._end_battle(battle_data, attacker_data['id'])
+            else: # Should not happen
+                await self._end_battle(battle_data, attacker_data['id'])
+        else: # Player defender
+            fresh_party = await self.bot.db.get_user_pokemon(defender_data['id'], in_party=True)
+            available_pokemon = [p for p in fresh_party if p['current_hp'] > 0]
+
+            if not available_pokemon:
+                await self._end_battle(battle_data, attacker_data['id'])
+            else:
+                # Prompt the user to switch
+                battle_data['awaiting_switch'] = defender_data['id']
+                battle_data['turn'] = defender_data['id'] # Temporarily give turn to defender to switch
+                view = PokemonSwitchView(self.bot, battle_data, defender_data['id'], is_forced=True)
+                await battle_data['channel'].send(f"<@{defender_data['id']}>, your Pokémon fainted! Choose your next Pokémon.", view=view, delete_after=60)
 
     async def _handle_status_move(self, battle_data, attacker_data, defender_data, move_name):
         """Handle status moves and their effects"""
@@ -870,39 +884,19 @@ class Battle(commands.Cog):
         """Handle 3-minute turn timeout"""
         await asyncio.sleep(180)  # 3 minutes
         
-        if user_id in self.active_battles:
+        # Check if the battle is still active and the turn hasn't changed
+        if user_id in self.active_battles and self.active_battles.get(user_id, {}).get('turn') == user_id:
             # Auto-forfeit on timeout
-            other_user = battle_data['challenger']['id'] if user_id == battle_data['opponent']['id'] else battle_data['opponent']['id']
+            timed_out_user_display = get_display_name(user_id)
+            other_user_id = battle_data['challenger']['id'] if user_id == battle_data['opponent']['id'] else battle_data['opponent']['id']
+            winner_display = get_display_name(other_user_id)
             
-            # Get proper name for NPC
-            if other_user < 0:
-                gym_cog = self.bot.get_cog('Gym')
-                player_id = user_id if user_id > 0 else (battle_data['challenger']['id'] if battle_data['challenger']['id'] > 0 else battle_data['opponent']['id'])
-                if gym_cog and player_id in gym_cog.active_gym_battles:
-                    gym_battle = gym_cog.active_gym_battles[player_id]
-                    if gym_battle['type'] == 'gym':
-                        from data.gym_data import GYM_LEADERS
-                        npc_name = GYM_LEADERS[gym_battle['leader']]['name']
-                    elif gym_battle['type'] == 'elite4':
-                        from data.gym_data import ELITE_FOUR
-                        npc_name = ELITE_FOUR[gym_battle['member']]['name']
-                    else:
-                        from data.gym_data import CHAMPION
-                        npc_name = CHAMPION['blue']['name']
-                    other_display = npc_name
-                else:
-                    other_display = "NPC"
-            else:
-                other_display = f"<@{other_user}>"
+            battle_data['battle_text_log'].append(f"{timed_out_user_display} took too long to move. {winner_display} wins by forfeit!")
             
-            embed = discord.Embed(
-                title="Battle Timeout!",
-                description=f"<@{user_id}> took too long to move. {other_display} wins by forfeit!",
-                color=0xff0000
-            )
-            
-            await battle_data['channel'].send(embed=embed)
-            await self._end_battle(battle_data, other_user)
+            # Display the final message in the log
+            await self._send_battle_log_embed(battle_data)
+
+            await self._end_battle(battle_data, other_user_id)
         
     def _calculate_stat(self, base_stat, iv, level):
         return int(((base_stat + iv) * 2 * level / 100) + 5)
@@ -1022,66 +1016,60 @@ class Battle(commands.Cog):
         
     async def _handle_npc_turn(self, battle_data):
         """Handle NPC turn automatically"""
+        battle_data['npc_turn_active'] = True
         await asyncio.sleep(2)  # Dramatic pause
 
-        # Check if battle still exists
-        npc_id = battle_data['challenger']['id'] if battle_data['challenger']['id'] < 0 else battle_data['opponent']['id']
-        if npc_id not in self.active_battles:
-            return  # Battle already ended
+        try:
+            npc_id = battle_data['challenger']['id'] if battle_data['challenger']['id'] < 0 else battle_data['opponent']['id']
+            if npc_id not in self.active_battles or battle_data.get('turn') != npc_id:
+                return
 
-        # Find NPC data
-        npc_data = None
-        if battle_data['challenger']['id'] < 0:
-            npc_data = battle_data['challenger']
-        elif battle_data['opponent']['id'] < 0:
-            npc_data = battle_data['opponent']
+            npc_data = battle_data['challenger'] if battle_data['challenger']['id'] < 0 else battle_data['opponent']
+            npc_pokemon = npc_data['pokemon']
 
-        if not npc_data:
-            return
+            if npc_pokemon['current_hp'] <= 0:
+                return
 
-        # Check if NPC Pokemon is still alive
-        npc_pokemon = npc_data['pokemon']
-        if npc_pokemon['current_hp'] <= 0:
-            # NPC Pokemon is fainted, battle should have ended
-            player_id = battle_data['challenger']['id'] if battle_data['challenger']['id'] > 0 else battle_data['opponent']['id']
-            await self._end_battle(battle_data, player_id)
-            return
+            moves = [npc_pokemon.get(f'move{i}') for i in range(1, 5)]
+            valid_moves = [m for m in moves if m and m in MOVES_DATA]
 
-        # Choose move for NPC using strategic AI
-        moves = [npc_pokemon.get('move1'), npc_pokemon.get('move2'), npc_pokemon.get('move3'), npc_pokemon.get('move4')]
-        valid_moves = [m for m in moves if m and m in MOVES_DATA]
-        
-        if valid_moves:
-            chosen_move = self._choose_strategic_move(npc_data, battle_data, valid_moves)
+            if valid_moves:
+                chosen_move = self._choose_strategic_move(npc_data, battle_data, valid_moves)
+                await self.use_move(battle_data, npc_id, chosen_move)
 
-            # Execute move
-            result = await self.use_move(battle_data, npc_data['id'], chosen_move)
-            await battle_data['channel'].send(result)
-
-            # Continue battle if not ended and battle still exists
-            if npc_id in self.active_battles and battle_data.get('turn'):
-                await asyncio.sleep(1)
+            if npc_id in self.active_battles and battle_data.get('turn') is not None:
                 await self._send_battle_status(battle_data)
+                await self._send_battle_log_embed(battle_data)
+        finally:
+            battle_data['npc_turn_active'] = False
     
     async def _end_battle(self, battle_data, winner_id):
+        # Stop the turn timer immediately and prevent further moves
+        if battle_data.get('turn_timeout_task'):
+            battle_data['turn_timeout_task'].cancel()
+        battle_data['turn'] = None
+
+        # Display the final battle log
+        await self._send_battle_log_embed(battle_data)
+        battle_data['battle_text_log'] = [] # Clear log for final message
+
         # Handle gym battle completion
         gym_cog = self.bot.get_cog('Gym')
         if gym_cog:
-            # Check if this is a gym battle
             player_id = battle_data['challenger']['id'] if battle_data['challenger']['id'] > 0 else battle_data['opponent']['id']
             if player_id in gym_cog.active_gym_battles:
                 gym_battle_data = gym_cog.active_gym_battles[player_id]
                 if winner_id == player_id:
-                    await gym_cog._handle_gym_victory(gym_battle_data)
+                    await gym_cog._handle_gym_victory(gym_battle_data, battle_data)
                 else:
-                    await gym_cog._handle_player_loss(gym_battle_data)
-                return
-        
-        # Get IDs from battle data
+                    await gym_cog._handle_player_loss(gym_battle_data, battle_data)
+                return  # Gym cog is now responsible for calling final_cleanup
+
+        # --- Standard PvP Battle Ending ---
         challenger_id = battle_data['challenger']['id']
         opponent_id = battle_data['opponent']['id']
-        
-        # Update battle status in database (only for PvP battles)
+
+        # Update battle status in database
         if 'id' in battle_data and challenger_id > 0 and opponent_id > 0:
             try:
                 await self.bot.db.execute(
@@ -1091,45 +1079,22 @@ class Battle(commands.Cog):
             except Exception as e:
                 import logging
                 logging.exception(f"Database error updating battle status: {e}")
-                pass  # Ignore database errors for battle completion
-                
-        # Record NPC battle completion for first-time tracking
-        elif challenger_id > 0 and opponent_id < 0 and battle_data.get('is_first_completion'):
-            npc_type = abs(opponent_id) // 1000
-            npc_index = abs(opponent_id) % 1000
-            try:
-                await self.bot.db.execute(
-                    """INSERT INTO npc_completions (user_id, npc_type, npc_index, completed_at)
-                       VALUES ($1, $2, $3, NOW()) ON CONFLICT DO NOTHING""",
-                    challenger_id, npc_type, npc_index
-                )
-            except Exception as e:
-                import logging
-                logging.info(f"NPC completion tracking failed (table may not exist): {e}")
-            
-        # Remove from active battles
 
-        if challenger_id in self.active_battles:
-            del self.active_battles[challenger_id]
-        if opponent_id in self.active_battles:
-            del self.active_battles[opponent_id]
-            
-        # Only award rewards for PvP battles (both IDs positive)
-        if challenger_id > 0 and opponent_id > 0:
-            # Award experience and money
+        # Award rewards for PvP battles
+        if winner_id > 0: # Only real players get rewards
             winner_pokemon = battle_data['challenger']['pokemon'] if winner_id == challenger_id else battle_data['opponent']['pokemon']
             loser_pokemon = battle_data['opponent']['pokemon'] if winner_id == challenger_id else battle_data['challenger']['pokemon']
             
             exp_gained = (loser_pokemon['level'] * 50) // winner_pokemon['level']
             money_gained = loser_pokemon['level'] * 100
             
-            # Award experience (only for real Pokemon)
-            if winner_pokemon['id'] > 0:
-                new_exp = winner_pokemon['experience'] + exp_gained
+            # Award experience
+            if winner_pokemon.get('id', 0) > 0:
                 await self.bot.db.execute(
-                    "UPDATE pokemon SET experience = $1 WHERE id = $2",
-                    new_exp, winner_pokemon['id']
+                    "UPDATE pokemon SET experience = experience + $1 WHERE id = $2",
+                    exp_gained, winner_pokemon['id']
                 )
+            # Award money
             await self.bot.db.execute(
                 "UPDATE users SET money = money + $1 WHERE user_id = $2",
                 money_gained, winner_id
@@ -1137,13 +1102,34 @@ class Battle(commands.Cog):
             
             embed = discord.Embed(
                 title="Battle Ended!",
-                description=f"<@{winner_id}> wins the battle!",
+                description=f"{get_display_name(winner_id)} wins the battle!",
                 color=0x00ff00
             )
             embed.add_field(name="Experience Gained", value=f"{exp_gained} XP", inline=True)
             embed.add_field(name="Money Gained", value=f"{money_gained} rupees", inline=True)
             
             await battle_data['channel'].send(embed=embed)
+
+        # Final cleanup for PvP battle
+        await self.final_cleanup(battle_data)
+
+    async def final_cleanup(self, battle_data):
+        """Final cleanup step for any battle. Should be called after all victory/loss messages."""
+        # Cancel any pending timeout task
+        if battle_data.get('turn_timeout_task'):
+            battle_data['turn_timeout_task'].cancel()
+
+        # Get IDs from battle data
+        challenger_id = battle_data['challenger']['id']
+        opponent_id = battle_data['opponent']['id']
+
+        # Remove from active battles
+        if challenger_id in self.active_battles:
+            del self.active_battles[challenger_id]
+        if opponent_id in self.active_battles:
+            # Ensure we don't delete the same object twice if IDs are the same
+            if opponent_id != challenger_id:
+                del self.active_battles[opponent_id]
 
 class BattleRequestView(discord.ui.View):
     def __init__(self, bot, challenger_id, opponent_id, challenger_pokemon, opponent_pokemon):
@@ -1226,9 +1212,12 @@ class BattleMoveView(discord.ui.View):
         
         if self.message:
             try:
-                await self.message.edit(view=self)
-            except discord.HTTPException:
-                pass  # Ignore Discord API errors for message editing
+                # Add a message to the embed to indicate timeout
+                embed = self.message.embeds[0]
+                embed.add_field(name="Timeout", value="The battle has ended due to inactivity.", inline=False)
+                await self.message.edit(embed=embed, view=self)
+            except (discord.HTTPException, IndexError):
+                pass  # Ignore errors if message is gone or has no embeds
                 
     def _create_move_callback(self, move_name):
         async def callback(interaction):
@@ -1239,10 +1228,13 @@ class BattleMoveView(discord.ui.View):
             battle_cog = self.bot.get_cog('Battle')
             await interaction.response.defer()
 
-            result = await battle_cog.use_move(self.battle_data, self.user_id, move_name)
+            # The use_move function now modifies the battle_data directly
+            await battle_cog.use_move(self.battle_data, self.user_id, move_name)
 
+            # Update the embeds if the battle is still active
             if self.user_id in battle_cog.active_battles and self.battle_data.get('turn') is not None:
-                await battle_cog._send_battle_status(self.battle_data, result_text=result)
+                await battle_cog._send_battle_status(self.battle_data)
+                await battle_cog._send_battle_log_embed(self.battle_data)
 
         return callback
         
@@ -1282,26 +1274,41 @@ class PokemonSwitchView(discord.ui.View):
             if interaction.user.id != self.user_id:
                 await interaction.response.send_message("Not your Pokemon!", ephemeral=True)
                 return
-                
-            # Switch Pokemon
+
+            battle_cog = self.bot.get_cog('Battle')
             user_data = self.battle_data['challenger'] if self.user_id == self.battle_data['challenger']['id'] else self.battle_data['opponent']
+
+            # Switch Pokemon in battle data
             user_data['pokemon'] = dict(user_data['party'][pokemon_index])
             user_data['current_index'] = pokemon_index
+            user_data = battle_cog._reset_battle_pokemon_stats(user_data)
             
             from data.complete_pokemon_data import COMPLETE_POKEMON_DATA
             species = COMPLETE_POKEMON_DATA[user_data['pokemon']['species_id']]
             
             if self.is_forced:
-                await interaction.response.send_message(f"Go, {species['name']}!")
-                battle_cog = self.bot.get_cog('Battle')
+                # Forced switch, turn goes back to the other player
+                other_user_id = self.battle_data['opponent']['id'] if self.user_id == self.battle_data['challenger']['id'] else self.battle_data['challenger']['id']
+                self.battle_data['turn'] = other_user_id
+                self.battle_data['awaiting_switch'] = None
+
+                # Edit the "Choose your next Pokemon" message to confirm
+                await interaction.response.edit_message(content=f"Go, {species['name']}!", view=None)
+
+                # Update the battle state
                 await battle_cog._send_battle_status(self.battle_data)
+                await battle_cog._send_battle_log_embed(self.battle_data)
             else:
                 # Voluntary switch - give turn to opponent
                 other_user_id = self.battle_data['opponent']['id'] if self.user_id == self.battle_data['challenger']['id'] else self.battle_data['challenger']['id']
                 self.battle_data['turn'] = other_user_id
-                await interaction.response.send_message(f"Switched to {species['name']}!")
-                battle_cog = self.bot.get_cog('Battle')
+
+                # Edit the ephemeral "Choose a Pokemon" message
+                await interaction.response.edit_message(content=f"Switched to {species['name']}!", view=None)
+
+                # Update battle state for everyone
                 await battle_cog._send_battle_status(self.battle_data)
+                await battle_cog._send_battle_log_embed(self.battle_data)
                 
         return callback
 
