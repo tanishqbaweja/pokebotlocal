@@ -330,6 +330,7 @@ class Battle(commands.Cog):
                 battle_data['battle_text_log'].append(secondary_effect)
 
         # Store last move used for Disable/Mimic
+        attacker_data['pokemon'] = dict(attacker_data['pokemon'])
         attacker_data['pokemon']['last_move_used'] = move_name
 
         # Check for fainted Pokemon
