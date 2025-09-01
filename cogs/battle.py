@@ -1126,6 +1126,10 @@ class Battle(commands.Cog):
             await self._execute_turn(battle_data)
     
     async def _end_battle(self, battle_data, winner_id):
+        # Cancel any pending turn timeout task
+        if battle_data.get('turn_timeout_task'):
+            battle_data['turn_timeout_task'].cancel()
+
         # Handle gym battle completion
         gym_cog = self.bot.get_cog('Gym')
         if gym_cog:
