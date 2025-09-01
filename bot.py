@@ -30,7 +30,6 @@ class PokemonBot(commands.Bot):
     async def setup_hook(self):
         self.db = Database(os.getenv('DATABASE_URL'))
         await self.db.connect()
-
         await self.load_extension('cogs.core')
         await self.load_extension('cogs.pokemon')
         await self.load_extension('cogs.spawn')
