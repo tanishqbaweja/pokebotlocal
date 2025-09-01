@@ -205,7 +205,8 @@ class Shop(commands.Cog):
             max_hp = ((species['base_hp'] + pokemon['hp_iv']) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
             
             if pokemon['current_hp'] >= max_hp:
-                return f"{pokemon['name']} is already at full HP!"
+                species_name = species['name']
+                return f"{species_name} is already at full HP!"
                 
             heal_amounts = {
                 "potion": 20, 
@@ -224,7 +225,8 @@ class Shop(commands.Cog):
                 new_hp, pokemon['id']
             )
             
-            result = f"{pokemon['name']} was healed for {actual_heal} HP!"
+            species_name = species['name']
+            result = f"{species_name} was healed for {actual_heal} HP!"
             
             # Full Restore also cures status conditions
             if item == "full_restore":
@@ -249,12 +251,16 @@ class Shop(commands.Cog):
                 "aspear_berry": "freeze",
                 "cheri_berry": "paralysis"
             }
-            return f"{pokemon['name']} was cured of {status_cures[item]}!"
+            species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
+            species_name = species['name'] if species else 'Pokemon'
+            return f"{species_name} was cured of {status_cures[item]}!"
             
         # Revival items
         elif item in ["revive", "max_revive", "revival_herb"]:
             if pokemon['current_hp'] > 0:
-                return f"{pokemon['name']} is not fainted!"
+                species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
+                species_name = species['name'] if species else 'Pokemon'
+                return f"{species_name} is not fainted!"
                 
             species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
             if not species:
@@ -273,7 +279,8 @@ class Shop(commands.Cog):
                 new_hp, pokemon['id']
             )
             
-            result = f"{pokemon['name']} was revived with {new_hp} HP!"
+            species_name = species['name']
+            result = f"{species_name} was revived with {new_hp} HP!"
             if item == "revival_herb":
                 result += " But it didn't like the bitter taste!"
             
@@ -288,7 +295,9 @@ class Shop(commands.Cog):
                 "elixir": "10 PP to all moves",
                 "max_elixir": "all PP to all moves"
             }
-            return f"{pokemon['name']} restored {pp_restore[item]}!"
+            species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
+            species_name = species['name'] if species else 'Pokemon'
+            return f"{species_name} restored {pp_restore[item]}!"
             
         # Stat boost items
         elif item in ["x_attack", "x_defend", "x_speed", "x_special", "x_accuracy", "dire_hit", "guard_spec"]:
@@ -301,7 +310,9 @@ class Shop(commands.Cog):
                 "dire_hit": "critical hit ratio",
                 "guard_spec": "stat protection"
             }
-            return f"{pokemon['name']}'s {stat_boosts[item]} was boosted!"
+            species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
+            species_name = species['name'] if species else 'Pokemon'
+            return f"{species_name}'s {stat_boosts[item]} was boosted!"
             
         # Evolution stones (would need evolution system integration)
         elif item in ["fire_stone", "water_stone", "thunder_stone", "leaf_stone", "moon_stone"]:
@@ -309,13 +320,19 @@ class Shop(commands.Cog):
             evolution_cog = self.bot.get_cog('Evolution')
             if evolution_cog:
                 # This would need stone evolution mapping in evolution system
-                return f"Used {item.replace('_', ' ').title()} on {pokemon['name']}!"
-            return f"Cannot use {item.replace('_', ' ').title()} on {pokemon['name']}!"
+                species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
+                species_name = species['name'] if species else 'Pokemon'
+                return f"Used {item.replace('_', ' ').title()} on {species_name}!"
+            species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
+            species_name = species['name'] if species else 'Pokemon'
+            return f"Cannot use {item.replace('_', ' ').title()} on {species_name}!"
             
         # Rare candies (level up item)
         elif item == "rare_candy":
             if pokemon['level'] >= 100:
-                return f"{pokemon['name']} is already at maximum level!"
+                species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
+                species_name = species['name'] if species else 'Pokemon'
+                return f"{species_name} is already at maximum level!"
                 
             new_level = pokemon['level'] + 1
             
@@ -344,9 +361,10 @@ class Shop(commands.Cog):
                     # Dispatch level up event for move learning and evolution
                     self.bot.dispatch('pokemon_level_up', pokemon['id'], pokemon['level'], new_level)
                 
-                return f"{pokemon['name']} grew to level {new_level}!"
+                species_name = species['name']
+                return f"{species_name} grew to level {new_level}!"
             
-            return f"Error calculating stats for {pokemon['name']}!"
+            return "Error calculating stats for Pokemon!"
             
         return None
     
