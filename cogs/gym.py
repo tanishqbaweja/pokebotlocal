@@ -297,15 +297,19 @@ class Gym(commands.Cog):
 
             
     async def _handle_gym_victory(self, gym_battle_data):
-        # Find player ID from battle system
-        battle_cog = self.bot.get_cog('Battle')
+        # Find player ID and channel from gym battle data
         player_id = None
         channel = None
-        for user_id, battle_data in battle_cog.active_battles.items():
-            if user_id > 0:  # Player ID
-                player_id = user_id
-                channel = battle_data['channel']
-                break
+        battle_cog = self.bot.get_cog('Battle')
+        
+        # Find the specific player's battle
+        for user_id in list(self.active_gym_battles.keys()):
+            if user_id in battle_cog.active_battles:
+                battle_data = battle_cog.active_battles[user_id]
+                if battle_data.get('challenger', {}).get('id') == user_id or battle_data.get('opponent', {}).get('id') == user_id:
+                    player_id = user_id
+                    channel = battle_data['channel']
+                    break
                 
         if not player_id:
             return
@@ -390,15 +394,19 @@ class Gym(commands.Cog):
             del self.active_gym_battles[user_id]
         
     async def _handle_player_loss(self, gym_battle_data):
-        # Find player ID from battle system
-        battle_cog = self.bot.get_cog('Battle')
+        # Find player ID and channel from gym battle data
         player_id = None
         channel = None
-        for user_id, battle_data in battle_cog.active_battles.items():
-            if user_id > 0:  # Player ID
-                player_id = user_id
-                channel = battle_data['channel']
-                break
+        battle_cog = self.bot.get_cog('Battle')
+        
+        # Find the specific player's battle
+        for user_id in list(self.active_gym_battles.keys()):
+            if user_id in battle_cog.active_battles:
+                battle_data = battle_cog.active_battles[user_id]
+                if battle_data.get('challenger', {}).get('id') == user_id or battle_data.get('opponent', {}).get('id') == user_id:
+                    player_id = user_id
+                    channel = battle_data['channel']
+                    break
                 
         if not player_id:
             return
