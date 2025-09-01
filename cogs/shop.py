@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import math
 
 class Shop(commands.Cog):
     def __init__(self, bot):
@@ -122,6 +121,52 @@ class Shop(commands.Cog):
         )
         
         await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="sell", description="Sell items from your inventory")
+    async def sell(self, interaction: discord.Interaction, item: str, quantity: int = 1):
+        user_id = interaction.user.id
+        item = item.lower().replace(' ', '_')
+
+        if quantity <= 0:
+            await interaction.response.send_message("Quantity must be positive!", ephemeral=True)
+            return
+
+        # Check if user has the item
+        inventory_item = await self.bot.db.fetchrow(
+            "SELECT quantity FROM user_inventory WHERE user_id = $1 AND item_name = $2",
+            user_id, item
+        )
+
+        if not inventory_item or inventory_item['quantity'] < quantity:
+            await interaction.response.send_message(f"You don't have {quantity}x {item.replace('_', ' ')} to sell!", ephemeral=True)
+            return
+
+        if item not in self.shop_items:
+            await interaction.response.send_message("This item cannot be sold.", ephemeral=True)
+            return
+
+        sell_price = self.shop_items[item]["price"] // 2
+        total_gain = sell_price * quantity
+
+        # Remove from inventory
+        await self.bot.db.execute(
+            "UPDATE user_inventory SET quantity = quantity - $1 WHERE user_id = $2 AND item_name = $3",
+            quantity, user_id, item
+        )
+
+        # Add money
+        await self.bot.db.execute(
+            "UPDATE users SET money = money + $1 WHERE user_id = $2",
+            total_gain, user_id
+        )
+
+        embed = discord.Embed(
+            title="Sale Successful!",
+            description=f"Sold {quantity}x {item.replace('_', ' ').title()} for {total_gain:,} rupees",
+            color=0x00ff00
+        )
+
+        await interaction.response.send_message(embed=embed)
         
     @app_commands.command(name="inventory", description="View your items")
     async def inventory(self, interaction: discord.Interaction):
@@ -155,176 +200,106 @@ class Shop(commands.Cog):
     @app_commands.command(name="use", description="Use an item on a Pokemon")
     async def use_item(self, interaction: discord.Interaction, item: str, position: int):
         user_id = interaction.user.id
-        item = item.lower().replace(' ', '_')
-        
+        item_name = item.lower().replace(' ', '_')
+
         if position < 1 or position > 6:
             await interaction.response.send_message("Position must be between 1 and 6!", ephemeral=True)
             return
-        
-        # Check if user has the item
+
         inventory = await self.bot.db.fetchrow(
             "SELECT quantity FROM user_inventory WHERE user_id = $1 AND item_name = $2",
-            user_id, item
+            user_id, item_name
         )
-        
         if not inventory or inventory['quantity'] <= 0:
             await interaction.response.send_message(f"You don't have any {item.replace('_', ' ')}!", ephemeral=True)
             return
-            
-        # Get Pokemon from party position
+
         pokemon = await self.bot.db.fetchrow(
             "SELECT * FROM pokemon WHERE owner_id = $1 AND in_party = TRUE AND party_position = $2",
             user_id, position
         )
-        
         if not pokemon:
             await interaction.response.send_message(f"No Pokemon at position {position}!", ephemeral=True)
             return
-            
-        # Use item
-        result = await self._use_item_on_pokemon(item, pokemon)
-        
-        if result:
-            # Remove item from inventory
+
+        message, consumed = await self._use_item_on_pokemon(interaction, item_name, pokemon)
+
+        if consumed:
             await self.bot.db.execute(
                 "UPDATE user_inventory SET quantity = quantity - 1 WHERE user_id = $1 AND item_name = $2",
-                user_id, item
+                user_id, item_name
             )
-            
-            await interaction.response.send_message(result)
-        else:
-            await interaction.response.send_message("Cannot use this item!", ephemeral=True)
-            
-    async def _use_item_on_pokemon(self, item, pokemon):
+
+        await interaction.response.send_message(message, ephemeral=not consumed)
+
+    async def _use_item_on_pokemon(self, interaction, item, pokemon):
         from data.complete_pokemon_data import COMPLETE_POKEMON_DATA
         
+        # Evolution stones
+        if item in ["fire_stone", "water_stone", "thunder_stone", "leaf_stone", "moon_stone"]:
+            return (f"This is an evolution stone. Please use the `/evolve` command to use it.", False)
+
         # Healing items
         if item in ["potion", "super_potion", "hyper_potion", "max_potion", "full_restore"]:
             species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
             if not species:
-                return f"Error: Invalid Pokemon species ID {pokemon['species_id']}"
+                return (f"Error: Invalid Pokemon species ID {pokemon['species_id']}", False)
             max_hp = ((species['base_hp'] + pokemon['hp_iv']) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
             
             if pokemon['current_hp'] >= max_hp:
-                return f"{pokemon['name']} is already at full HP!"
+                return (f"{pokemon['name']} is already at full HP!", False)
                 
             heal_amounts = {
-                "potion": 20, 
-                "super_potion": 50, 
-                "hyper_potion": 200,
-                "max_potion": max_hp,  # Full heal
-                "full_restore": max_hp  # Full heal + status cure
+                "potion": 20, "super_potion": 50, "hyper_potion": 200,
+                "max_potion": max_hp, "full_restore": max_hp
             }
             heal_amount = heal_amounts[item]
             
             new_hp = min(max_hp, pokemon['current_hp'] + heal_amount)
             actual_heal = new_hp - pokemon['current_hp']
             
-            await self.bot.db.execute(
-                "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                new_hp, pokemon['id']
-            )
+            await self.bot.db.execute("UPDATE pokemon SET current_hp = $1 WHERE id = $2", new_hp, pokemon['id'])
             
             result = f"{pokemon['name']} was healed for {actual_heal} HP!"
-            
-            # Full Restore also cures status conditions
             if item == "full_restore":
-                # Note: Status conditions would need to be stored in database to implement this fully
                 result += " All status conditions were cured!"
-            
-            return result
+            return (result, True)
             
         # Status healing items
-        elif item in ["antidote", "awakening", "burn_heal", "ice_heal", "paralyze_heal", "pecha_berry", "chesto_berry", "rawst_berry", "aspear_berry", "cheri_berry"]:
-            # Note: This would require status conditions to be stored in the database
-            # For now, return a placeholder message
+        elif item in ["antidote", "awakening", "burn_heal", "ice_heal", "paralyze_heal"]:
             status_cures = {
-                "antidote": "poison",
-                "awakening": "sleep", 
-                "burn_heal": "burn",
-                "ice_heal": "freeze",
-                "paralyze_heal": "paralysis",
-                "pecha_berry": "poison",
-                "chesto_berry": "sleep",
-                "rawst_berry": "burn",
-                "aspear_berry": "freeze",
-                "cheri_berry": "paralysis"
+                "antidote": "poison", "awakening": "sleep", "burn_heal": "burn",
+                "ice_heal": "freeze", "paralyze_heal": "paralysis"
             }
-            return f"{pokemon['name']} was cured of {status_cures[item]}!"
+            return (f"{pokemon['name']} was cured of {status_cures[item]}!", True)
             
         # Revival items
-        elif item in ["revive", "max_revive", "revival_herb"]:
+        elif item in ["revive", "max_revive"]:
             if pokemon['current_hp'] > 0:
-                return f"{pokemon['name']} is not fainted!"
+                return (f"{pokemon['name']} is not fainted!", False)
                 
             species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
             if not species:
-                return f"Error: Invalid Pokemon species ID {pokemon['species_id']}"
+                return (f"Error: Invalid Pokemon species ID {pokemon['species_id']}", False)
             max_hp = ((species['base_hp'] + pokemon['hp_iv']) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
             
-            if item == "revive":
-                new_hp = max_hp // 2  # Revive to half HP
-            elif item == "max_revive":
-                new_hp = max_hp  # Revive to full HP
-            else:  # revival_herb
-                new_hp = max_hp  # Full revive but bitter taste
+            new_hp = max_hp // 2 if item == "revive" else max_hp
                 
-            await self.bot.db.execute(
-                "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                new_hp, pokemon['id']
-            )
+            await self.bot.db.execute("UPDATE pokemon SET current_hp = $1 WHERE id = $2", new_hp, pokemon['id'])
             
-            result = f"{pokemon['name']} was revived with {new_hp} HP!"
-            if item == "revival_herb":
-                result += " But it didn't like the bitter taste!"
+            return (f"{pokemon['name']} was revived with {new_hp} HP!", True)
             
-            return result
-            
-        # PP restoration items
-        elif item in ["ether", "max_ether", "elixir", "max_elixir"]:
-            # Note: PP system would need to be implemented in database
-            pp_restore = {
-                "ether": "10 PP to one move",
-                "max_ether": "all PP to one move", 
-                "elixir": "10 PP to all moves",
-                "max_elixir": "all PP to all moves"
-            }
-            return f"{pokemon['name']} restored {pp_restore[item]}!"
-            
-        # Stat boost items
-        elif item in ["x_attack", "x_defend", "x_speed", "x_special", "x_accuracy", "dire_hit", "guard_spec"]:
-            stat_boosts = {
-                "x_attack": "Attack",
-                "x_defend": "Defense",
-                "x_speed": "Speed", 
-                "x_special": "Special",
-                "x_accuracy": "Accuracy",
-                "dire_hit": "critical hit ratio",
-                "guard_spec": "stat protection"
-            }
-            return f"{pokemon['name']}'s {stat_boosts[item]} was boosted!"
-            
-        # Evolution stones (would need evolution system integration)
-        elif item in ["fire_stone", "water_stone", "thunder_stone", "leaf_stone", "moon_stone"]:
-            # Check if Pokemon can evolve with this stone
-            evolution_cog = self.bot.get_cog('Evolution')
-            if evolution_cog:
-                # This would need stone evolution mapping in evolution system
-                return f"Used {item.replace('_', ' ').title()} on {pokemon['name']}!"
-            return f"Cannot use {item.replace('_', ' ').title()} on {pokemon['name']}!"
-            
-        # Rare candies (level up item)
+        # Rare candies
         elif item == "rare_candy":
             if pokemon['level'] >= 100:
-                return f"{pokemon['name']} is already at maximum level!"
+                return (f"{pokemon['name']} is already at maximum level!", False)
                 
             new_level = pokemon['level'] + 1
-            
-            # Calculate new HP
             species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
+
             if species:
-                new_max_hp = ((species['base_hp'] + pokemon['hp_iv']) * 2 * new_level // 100) + new_level + 10
                 old_max_hp = ((species['base_hp'] + pokemon['hp_iv']) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
+                new_max_hp = ((species['base_hp'] + pokemon['hp_iv']) * 2 * new_level // 100) + new_level + 10
                 hp_increase = new_max_hp - old_max_hp
                 new_current_hp = pokemon['current_hp'] + hp_increase
                 
@@ -333,23 +308,13 @@ class Shop(commands.Cog):
                     new_level, new_current_hp, pokemon['id']
                 )
                 
-                # Trigger level up events
-                experience_cog = self.bot.get_cog('Experience')
-                if experience_cog:
-                    # Create a mutable pokemon dict for level up handling
-                    pokemon_dict = dict(pokemon)
-                    pokemon_dict['level'] = new_level
-                    pokemon_dict['current_hp'] = new_current_hp
-                    await experience_cog._handle_level_up(pokemon_dict, pokemon['level'], new_level)
-                    
-                    # Dispatch level up event for move learning and evolution
-                    self.bot.dispatch('pokemon_level_up', pokemon['id'], pokemon['level'], new_level)
+                self.bot.dispatch('pokemon_level_up', pokemon['id'], pokemon['level'], new_level, interaction.channel.id)
                 
-                return f"{pokemon['name']} grew to level {new_level}!"
+                return (f"{pokemon['name']} grew to level {new_level}!", True)
             
-            return f"Error calculating stats for {pokemon['name']}!"
+            return (f"Error calculating stats for {pokemon['name']}!", False)
             
-        return None
+        return ("This item cannot be used.", False)
     
     @app_commands.command(name="healall", description="Heal all Pokemon in your party to full HP")
     async def heal_all(self, interaction: discord.Interaction):

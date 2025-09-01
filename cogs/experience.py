@@ -100,7 +100,8 @@ class Experience(commands.Cog):
                             await message_channel.send(f"🎆 **{species_name}** evolved into **{evo_species['name']}**!")
 
             # Trigger evolution and move learning events
-            self.bot.dispatch('pokemon_level_up', pokemon_dict['id'], current_level, new_level)
+            channel_id = message_channel.id if message_channel else None
+            self.bot.dispatch('pokemon_level_up', pokemon_dict['id'], current_level, new_level, channel_id)
             
     async def _handle_level_up(self, pokemon, old_level, new_level):
         # Recalculate HP

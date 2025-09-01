@@ -108,8 +108,7 @@ class Battle(commands.Cog):
             'opponent': {'id': opponent_id, 'pokemon': opponent_pokemon, 'party': opponent_party, 'current_index': 0, 'stats': {}},
             'turn': challenger_id,
             'channel': channel,
-            'server_id': channel.guild.id,
-            'moves_this_turn': 0
+            'server_id': channel.guild.id
         }
         
         # Add first completion flag for NPC battles
@@ -142,13 +141,12 @@ class Battle(commands.Cog):
         
         await self._send_battle_status(battle_data)
         
-    async def _send_battle_status(self, battle_data):
+    async def _send_battle_status(self, battle_data, result_text=None):
         challenger_pokemon = battle_data['challenger']['pokemon']
         opponent_pokemon = battle_data['opponent']['pokemon']
         
         embed = discord.Embed(title="Pokemon Battle!", color=0xf39c12)
         
-        # Challenger Pokemon with status
         c_hp_percent = (challenger_pokemon['current_hp'] / self._calculate_max_hp(challenger_pokemon)) * 100
         c_status_text = self._get_status_display(battle_data['challenger'])
         embed.add_field(
@@ -159,7 +157,6 @@ class Battle(commands.Cog):
         
         embed.add_field(name="VS", value="⚔️", inline=True)
         
-        # Opponent Pokemon with status
         o_hp_percent = (opponent_pokemon['current_hp'] / self._calculate_max_hp(opponent_pokemon)) * 100
         o_status_text = self._get_status_display(battle_data['opponent'])
         embed.add_field(
@@ -168,23 +165,24 @@ class Battle(commands.Cog):
             inline=True
         )
         
-        # Turn indicator
+        if result_text:
+            embed.add_field(name="Results", value=result_text, inline=False)
+
         current_user = battle_data['turn']
-        embed.add_field(
-            name="Turn",
-            value=f"<@{current_user}>'s turn",
-            inline=False
-        )
-        
-        # Check if current user is NPC (negative ID)
-        if current_user < 0:
-            # NPC turn - make automatic move
-            await self._handle_npc_turn(battle_data)
-        else:
-            # Player turn - show move selection
-            view = BattleMoveView(self.bot, battle_data, current_user)
+        embed.add_field(name="Turn", value=f"<@{current_user}>'s turn", inline=False)
+
+        view = BattleMoveView(self.bot, battle_data, current_user)
+
+        if 'message' not in battle_data or not battle_data['message']:
             message = await battle_data['channel'].send(embed=embed, view=view)
-            view.message = message
+            battle_data['message'] = message
+        else:
+            await battle_data['message'].edit(embed=embed, view=view)
+        
+        view.message = battle_data['message']
+
+        if current_user < 0:
+            await self._handle_npc_turn(battle_data)
         
         # Set turn timeout
         if battle_data.get('turn_timeout_task'):
@@ -217,7 +215,6 @@ class Battle(commands.Cog):
                 battle_data['turn'] = defender_data['id']
                 return result_text
             
-        move_name = move_name.lower().replace(' ', '_').replace('-', '_')
         move = MOVES_DATA.get(move_name)
         if not move:
             return "Invalid move!"
@@ -225,7 +222,7 @@ class Battle(commands.Cog):
         result_text = f"{attacker_data['pokemon']['name']} used {move_name.replace('_', ' ').title()}!\n"
         
         # Check move accuracy first (only for non-status moves)
-        if move['category'] != 'status' and not self._check_move_accuracy(move_name, move, attacker_data, defender_data):
+        if move['category'] != 'status' and not self._check_move_accuracy(move, attacker_data, defender_data):
             result_text += "The attack missed!"
             battle_data['turn'] = defender_data['id']
             return result_text
@@ -245,11 +242,13 @@ class Battle(commands.Cog):
                 
                 # Award experience for defeating opponent Pokemon (only for real Pokemon, not NPCs)
                 if attacker_data['pokemon']['id'] > 0:
-                    exp_gained = (defender_data['pokemon']['level'] * 50) // attacker_data['pokemon']['level']
-                    if exp_gained > 0:
-                        experience_cog = self.bot.get_cog('Experience')
-                        if experience_cog:
-                            await experience_cog._add_experience(attacker_data['pokemon'], exp_gained)
+                    experience_cog = self.bot.get_cog('Experience')
+                    if experience_cog:
+                        base_exp = POKEMON_DATA[defender_data['pokemon']['species_id']].get('base_experience', 75)
+                        exp_gained = int((base_exp * defender_data['pokemon']['level']) / 7)
+
+                        if exp_gained > 0:
+                            await experience_cog._add_experience(attacker_data['pokemon'], exp_gained, battle_data['channel'])
                             result_text += f"\n{attacker_data['pokemon']['name']} gained {exp_gained} experience!"
         else:
             # Calculate damage for attacking moves
@@ -304,7 +303,7 @@ class Battle(commands.Cog):
                     if exp_gained > 0:
                         experience_cog = self.bot.get_cog('Experience')
                         if experience_cog:
-                            await experience_cog._add_experience(attacker_data['pokemon'], exp_gained)
+                            await experience_cog._add_experience(attacker_data['pokemon'], exp_gained, battle_data['channel'])
                             result_text += f"\n{attacker_data['pokemon']['name']} gained {exp_gained} experience!"
                 
                 # Handle Pokemon switching (NPC or Player)
@@ -380,31 +379,33 @@ class Battle(commands.Cog):
                         # Keep turn with same player when Pokemon faints (forced switch)
                         return result_text
             
+        # Apply end-of-turn status effects
+        if status_cog:
+            # Apply to attacker
+            attacker_status_result = status_cog.apply_status_damage(attacker_data, battle_data)
+            if attacker_status_result:
+                result_text += f"\n{attacker_status_result}"
+                # Update database if HP changed (only for real Pokemon)
+                if attacker_data['pokemon']['id'] > 0:
+                    await self.bot.db.execute(
+                        "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                        attacker_data['pokemon']['current_hp'], attacker_data['pokemon']['id']
+                    )
+
+            # Apply to defender
+            defender_status_result = status_cog.apply_status_damage(defender_data, battle_data)
+            if defender_status_result:
+                result_text += f"\n{defender_status_result}"
+                # Update database if HP changed (only for real Pokemon)
+                if defender_data['pokemon']['id'] > 0:
+                    await self.bot.db.execute(
+                        "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                        defender_data['pokemon']['current_hp'], defender_data['pokemon']['id']
+                    )
                 
         # Switch turns (only if no Pokemon fainted)
         if defender_data['pokemon']['current_hp'] > 0:
             battle_data['turn'] = defender_data['id']
-
-        battle_data['moves_this_turn'] = battle_data.get('moves_this_turn', 0) + 1
-
-        # After two moves, a full turn has passed. Apply end-of-turn effects.
-        if battle_data['moves_this_turn'] == 2:
-            battle_data['moves_this_turn'] = 0 # Reset for next turn
-            end_of_turn_text = []
-
-            # Apply effects for both pokemon
-            for p_data in [battle_data['challenger'], battle_data['opponent']]:
-                 if p_data['pokemon']['current_hp'] > 0:
-                    status_result = status_cog.apply_status_damage(p_data, battle_data)
-                    if status_result:
-                        end_of_turn_text.append(status_result)
-                        # Check for faint from status effect
-                        if p_data['pokemon']['current_hp'] <= 0:
-                             end_of_turn_text.append(f"{p_data['pokemon']['name']} fainted!")
-
-            if end_of_turn_text:
-                result_text += "\n" + "\n".join(end_of_turn_text)
-
         return result_text
 
     async def _handle_status_move(self, battle_data, attacker_data, defender_data, move_name):
@@ -518,38 +519,36 @@ class Battle(commands.Cog):
                 
         # Transform (Ditto's signature move)
         elif move_name == 'transform':
-            # Prevent transforming into a transformed Pokemon
-            if defender_data.get('transformed'):
-                return "But it failed!"
+            # Copy opponent's stats, types, and moves but keep own HP
+            defender_species = POKEMON_DATA[defender['species_id']]
+            attacker_species = POKEMON_DATA[attacker['species_id']]
 
-            original_attacker_name = attacker['name']
+            # Store original HP
             original_hp = attacker['current_hp']
-            original_hp_iv = attacker['hp_iv']
+            original_max_hp = self._calculate_max_hp(attacker)
 
-            # Transform attacker into defender, copying stats, types, and moves
+            # Transform attacker into defender
             attacker_data['transformed'] = True
             attacker_data['original_species'] = attacker['species_id']
-
-            # Copy all relevant data from defender to attacker
             attacker['species_id'] = defender['species_id']
             attacker['name'] = defender['name']
+
+            # Copy moves
             attacker['move1'] = defender.get('move1')
             attacker['move2'] = defender.get('move2')
             attacker['move3'] = defender.get('move3')
             attacker['move4'] = defender.get('move4')
+
+            # Copy IVs for stat calculation (but keep own HP)
             attacker['attack_iv'] = defender['attack_iv']
             attacker['defense_iv'] = defender['defense_iv']
             attacker['special_iv'] = defender['special_iv']
             attacker['speed_iv'] = defender['speed_iv']
             
-            # Restore original HP and HP IV to prevent HP changes
-            attacker['current_hp'] = original_hp
-            attacker['hp_iv'] = original_hp_iv
-
             # Reset stat stages to match opponent
-            attacker_data['stats'] = dict(defender_data.get('stats', {}))
+            attacker_data['stats'] = dict(defender_data['stats'])
             
-            return f"{original_attacker_name} transformed into {defender['name']}!"
+            return f"{attacker['name']} transformed into {defender['name']}!"
             
         # Fixed damage moves
         elif move_name == 'sonic_boom':
@@ -839,33 +838,9 @@ class Battle(commands.Cog):
             
         return None
         
-    def _check_move_accuracy(self, move_name, move, attacker_data, defender_data):
-        """Check if move hits based on accuracy and evasion, with special handling for OHKO moves."""
-        ohko_moves = ['fissure', 'guillotine', 'horn_drill']
-        if move_name in ohko_moves:
-            attacker = attacker_data['pokemon']
-            defender = defender_data['pokemon']
-
-            # OHKO moves fail if the target is a higher level in later gens, but in Gen 1 it's about speed.
-            # They also have 30% accuracy if they can hit.
-            if attacker['level'] < defender['level']:
-                return False
-
-            # Calculate current speed for both Pokemon
-            attacker_species = POKEMON_DATA[attacker['species_id']]
-            defender_species = POKEMON_DATA[defender['species_id']]
-
-            attacker_speed = self._calculate_stat(attacker_species['base_speed'], attacker['speed_iv'], attacker['level'])
-            defender_speed = self._calculate_stat(defender_species['base_speed'], defender['speed_iv'], defender['level'])
-
-            if attacker_speed < defender_speed:
-                return False # OHKO moves fail if the user is slower in Gen 1.
-
-            return random.randint(1, 100) <= 30
-
+    def _check_move_accuracy(self, move, attacker_data, defender_data):
+        """Check if move hits based on accuracy and evasion"""
         base_accuracy = move['accuracy']
-        if base_accuracy is None: # Moves like Swift should always hit
-            return True
 
         # Apply accuracy and evasion stat modifications
         accuracy_stage = attacker_data['stats'].get('accuracy', 0)
@@ -1089,10 +1064,6 @@ class Battle(commands.Cog):
                 await self._send_battle_status(battle_data)
     
     async def _end_battle(self, battle_data, winner_id):
-        # Cancel any pending turn timeout task
-        if battle_data.get('turn_timeout_task'):
-            battle_data['turn_timeout_task'].cancel()
-
         # Handle gym battle completion
         gym_cog = self.bot.get_cog('Gym')
         if gym_cog:
@@ -1266,20 +1237,12 @@ class BattleMoveView(discord.ui.View):
                 return
 
             battle_cog = self.bot.get_cog('Battle')
+            await interaction.response.defer()
+
             result = await battle_cog.use_move(self.battle_data, self.user_id, move_name)
 
-            await interaction.response.send_message(result)
-
-            # Check if battle still exists (may have ended during move execution)
-            if self.user_id not in battle_cog.active_battles:
-                return
-
-            # Small delay to ensure message order
-            await asyncio.sleep(0.1)
-
-            # Only continue if battle still exists and has a valid turn
             if self.user_id in battle_cog.active_battles and self.battle_data.get('turn') is not None:
-                await battle_cog._send_battle_status(self.battle_data)
+                await battle_cog._send_battle_status(self.battle_data, result_text=result)
 
         return callback
         
