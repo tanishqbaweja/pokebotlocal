@@ -4112,3 +4112,34 @@ Traceback (most recent call last):
 discord.app_commands.errors.CommandInvokeError: Command 'spawn' raised an exception: Forbidden: 403 Forbidden (error code: 50001): Missing Access
 2025-09-04 09:39:47,342 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
 2025-09-04 09:39:47,342 - discord.client - INFO - logging in using static token
+2025-09-04 09:40:57,219 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-04 09:40:57,221 - discord.client - INFO - logging in using static token
+2025-09-04 09:40:59,471 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: cdcaed91e244d465b9d0332269856fb3).
+2025-09-04 09:41:24,821 - discord.app_commands.tree - ERROR - Ignoring exception in command 'spawn'
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\app_commands\commands.py", line 858, in _do_call
+    return await self._callback(self.binding, interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\cogs\admin.py", line 55, in force_spawn
+    await spawn_cog.spawn_pokemon_admin(interaction.channel, interaction.guild.id, species_id, level, shiny)
+  File "H:\Github Repositories\pokebot\cogs\spawn.py", line 175, in spawn_pokemon_admin
+    spawn_message = await channel.send(embed=embed, files=files)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\abc.py", line 1703, in send
+    data = await state.http.send_message(channel.id, params=params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\http.py", line 767, in request
+    raise Forbidden(response, data)
+discord.errors.Forbidden: 403 Forbidden (error code: 50001): Missing Access
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\app_commands\tree.py", line 1297, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\app_commands\commands.py", line 884, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\app_commands\commands.py", line 877, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'spawn' raised an exception: Forbidden: 403 Forbidden (error code: 50001): Missing Access
