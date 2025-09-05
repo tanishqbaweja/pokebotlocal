@@ -4166,3 +4166,8 @@ discord.app_commands.errors.CommandInvokeError: Command 'spawn' raised an except
 2025-09-05 11:36:02,300 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: c2406dff58b6b03d9affbc59d410e652).
 2025-09-05 11:36:04,369 - root - INFO - Professor Byte#9223 has connected to Discord!
 2025-09-05 11:36:05,222 - root - INFO - Slash commands synced!
+2025-09-05 11:39:30,438 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-05 11:39:30,439 - discord.client - INFO - logging in using static token
+2025-09-05 11:39:33,365 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 415b13e6e07905eb5b18fe10bce5fb59).
+2025-09-05 11:39:35,367 - root - INFO - Professor Byte#9223 has connected to Discord!
+2025-09-05 11:39:36,196 - root - INFO - Slash commands synced!
