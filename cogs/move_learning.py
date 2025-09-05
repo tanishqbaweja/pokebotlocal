@@ -6,7 +6,7 @@ import asyncio
 class MoveLearning(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.pending_moves = {}  # user_id: {pokemon_id, new_move, level}
+        self.pending_moves = {}  # user_id: {pokemon_id, new_move, level, species_name, current_moves}
         self.load_levelup_moves()
         
     def load_levelup_moves(self):
@@ -57,7 +57,7 @@ class MoveLearning(commands.Cog):
                 continue  # Already knows this move
                 
             if len(current_moves) < 4:
-                # Learn move automatically - validate slot number for security
+                # Learn move automatically
                 slot = len(current_moves) + 1
                 if slot not in [1, 2, 3, 4]:
                     continue
@@ -87,80 +87,45 @@ class MoveLearning(commands.Cog):
                     'pokemon_id': pokemon_id,
                     'new_move': new_move,
                     'level': new_level,
-                    'species_name': species_name
+                    'species_name': species_name,
+                    'current_moves': current_moves.copy()
                 }
                 
-                # Notify user they need to choose
-                try:
-                    user_obj = self.bot.get_user(pokemon['owner_id'])
-                    if user_obj:
-                        current_move_list = "\n".join([f"• {move.replace('_', ' ').title()}" for move in current_moves])
-                        embed = discord.Embed(
-                            title="🎓 Move Learning Choice Required!",
-                            description=f"Your **{species_name}** wants to learn **{new_move.replace('_', ' ').title()}**!\n\n"
-                                      f"**Current Moves:**\n{current_move_list}\n\n"
-                                      f"Use `/choosemove` to decide which move to replace, or `/forgetmove` to skip learning this move.\n\n"
-                                      f"⚠️ **You cannot battle or trade until you make this decision!**",
-                            color=0xffa500
-                        )
-                        await user_obj.send(embed=embed)
-                except:
-                    pass
+                # Show move choice immediately
+                await self._show_move_choice(pokemon['owner_id'])
                     
-    @commands.hybrid_command(name="choosemove", description="Choose which move to replace when learning a new move")
-    async def choose_move(self, ctx):
-        user_id = ctx.author.id
-        
+    async def _show_move_choice(self, user_id):
+        """Show move choice interface to user"""
         if user_id not in self.pending_moves:
-            await ctx.send("You don't have any pending move choices!", ephemeral=True)
             return
             
         pending = self.pending_moves[user_id]
         
-        # Validate pending data structure
-        required_keys = ['pokemon_id', 'new_move', 'species_name']
-        if not all(key in pending for key in required_keys):
-            del self.pending_moves[user_id]
-            await ctx.send("Invalid pending move data. Please try again.", ephemeral=True)
+        try:
+            user_obj = self.bot.get_user(user_id)
+            if not user_obj:
+                return
+                
+            embed = discord.Embed(
+                title="Move Learning Choice",
+                description=f"Your **{pending['species_name']}** wants to learn **{pending['new_move'].replace('_', ' ').title()}**, but already knows 4 moves!\n\nChoose one move to forget:",
+                color=0xffa500
+            )
+            
+            view = MoveChoiceView(self.bot.db, user_id, pending)
+            await user_obj.send(embed=embed, view=view)
+        except:
+            pass
+            
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        """Show move choice on every command until resolved"""
+        if message.author.bot:
             return
             
-        pokemon = await self.bot.db.fetchrow("SELECT * FROM pokemon WHERE id = $1", pending['pokemon_id'])
-        
-        if not pokemon:
-            del self.pending_moves[user_id]
-            await ctx.send("Pokemon not found!", ephemeral=True)
-            return
-            
-        current_moves = [pokemon['move1'], pokemon['move2'], pokemon['move3'], pokemon['move4']]
-        current_moves = [move for move in current_moves if move]
-        
-        embed = discord.Embed(
-            title=f"Choose Move to Replace",
-            description=f"Your {pending['species_name']} wants to learn **{pending['new_move']}**.\n\n"
-                      f"Which move should be forgotten?",
-            color=0x3498db
-        )
-        
-        view = MoveChoiceView(self.bot.db, user_id, pending, current_moves)
-        await ctx.send(embed=embed, view=view, ephemeral=True)
-        
-    @commands.hybrid_command(name="forgetmove", description="Skip learning the new move")
-    async def forget_move(self, ctx):
-        user_id = ctx.author.id
-        
-        if user_id not in self.pending_moves:
-            await ctx.send("You don't have any pending move choices!", ephemeral=True)
-            return
-            
-        pending = self.pending_moves[user_id]
-        del self.pending_moves[user_id]
-        
-        embed = discord.Embed(
-            title="Move Forgotten",
-            description=f"Your {pending['species_name']} did not learn **{pending['new_move']}**.",
-            color=0xe74c3c
-        )
-        await ctx.send(embed=embed, ephemeral=True)
+        user_id = message.author.id
+        if user_id in self.pending_moves and message.content.startswith('/'):
+            await self._show_move_choice(user_id)
         
     def has_pending_moves(self, user_id):
         return user_id in self.pending_moves
@@ -239,7 +204,7 @@ class MoveLearning(commands.Cog):
             'drillpeck': 'drill_peck',
             'eggbomb': 'egg_bomb',
             'fireblast': 'fire_blast',
-            'firespin': 'fire_spin',  # Fixed from fire_swing
+            'firespin': 'fire_spin',
             'focusenergy': 'focus_energy',
             'furyattack': 'fury_attack',
             'furyswipes': 'fury_swipes',
@@ -255,124 +220,38 @@ class MoveLearning(commands.Cog):
             'lovelykiss': 'lovely_kiss',
             'lowkick': 'low_kick',
             'mirrormove': 'mirror_move',
-            
-            # Additional common variations
-            'thunderbolt': 'thunderbolt',
-            'flamethrower': 'flamethrower',
-            'earthquake': 'earthquake',
-            'psychic': 'psychic',
-            'blizzard': 'blizzard',
-            'surf': 'surf',
-            'strength': 'strength',
-            'flash': 'flash',
-            'cut': 'cut',
-            'fly': 'fly',
-            
-            # Hyphenated moves
-            'hi_jump_kick': 'high_jump_kick',
-            'u_turn': 'u_turn',
-            
-            # Moves with apostrophes or periods
-            'kings_rock': 'kings_rock',
-            
-            # Status moves
             'swordsdance': 'swords_dance',
             'sleeptalk': 'sleep_talk',
-            'dreameater': 'dream_eater',
-            'substitute': 'substitute',
-            'transform': 'transform',
-            'metronome': 'metronome',
-            'minimize': 'minimize',
-            'recover': 'recover',
-            'teleport': 'teleport',
-            'disable': 'disable',
-            'counter': 'counter',
-            'mimic': 'mimic',
-            'reflect': 'reflect',
-            'barrier': 'barrier',
-            'haze': 'haze',
-            'mist': 'mist',
-            'rest': 'rest',
-            'conversion': 'conversion',
-            'splash': 'splash',
-            'sharpen': 'sharpen',
-            'withdraw': 'withdraw',
-            'harden': 'harden',
-            'growl': 'growl',
-            'roar': 'roar',
-            'sing': 'sing',
-            'supersonic': 'supersonic',
-            'screech': 'screech',
-            'leer': 'leer',
-            'glare': 'glare',
-            'kinesis': 'kinesis',
-            'amnesia': 'amnesia',
-            'agility': 'agility',
-            'whirlwind': 'whirlwind',
-            
-            # Multi-hit moves
-            'doubleslap': 'double_slap',
-            'cometpunch': 'comet_punch',
-            'furyattack': 'fury_attack',
-            'pinmissile': 'pin_missile',
-            'spikecannon': 'spike_cannon',
-            'furyswipes': 'fury_swipes',
-            
-            # Recoil moves
-            'takedown': 'take_down',
-            'doubleedge': 'double_edge',
-            'jumpkick': 'jump_kick',
-            'hijumpkick': 'high_jump_kick',
-            
-            # OHKO moves
-            'guillotine': 'guillotine',
-            'horndrill': 'horn_drill',
-            
-            # Self-destruct moves
-            'selfdestruct': 'self_destruct',
-            
-            # Two-turn moves
-            'skullbash': 'skull_bash',
-            'skyattack': 'sky_attack',
-            'razorwind': 'razor_wind',
-            'solarbeam': 'solar_beam',
-            
-            # Additional common moves
-            'bide': 'bide',
-            'bind': 'bind',
-            'clamp': 'clamp',
-            'wrap': 'wrap',
-            'firespin': 'fire_spin'
+            'dreameater': 'dream_eater'
         }
         
         return special_conversions.get(converted, converted)
 
 class MoveChoiceView(discord.ui.View):
-    def __init__(self, db, user_id, pending, current_moves):
-        super().__init__(timeout=300)
+    def __init__(self, db, user_id, pending):
+        super().__init__(timeout=None)
         self.db = db
         self.user_id = user_id
         self.pending = pending
-        self.current_moves = current_moves
         
         # Add buttons for each current move
-        for i, move in enumerate(current_moves):
+        for i, move in enumerate(pending['current_moves']):
             button = discord.ui.Button(
-                label=f"Replace {move}",
+                label=move.replace('_', ' ').title(),
                 style=discord.ButtonStyle.secondary,
                 custom_id=f"replace_{i}"
             )
             button.callback = self.make_replace_callback(i, move)
             self.add_item(button)
             
-        # Add cancel button
-        cancel_button = discord.ui.Button(
+        # Add ignore button
+        ignore_button = discord.ui.Button(
             label="Don't Learn Move",
             style=discord.ButtonStyle.danger,
-            custom_id="cancel"
+            custom_id="ignore"
         )
-        cancel_button.callback = self.cancel_callback
-        self.add_item(cancel_button)
+        ignore_button.callback = self.ignore_callback
+        self.add_item(ignore_button)
         
     def make_replace_callback(self, slot, old_move):
         async def replace_callback(interaction):
@@ -380,7 +259,7 @@ class MoveChoiceView(discord.ui.View):
                 await interaction.response.send_message("This isn't your choice!", ephemeral=True)
                 return
                 
-            # Replace the move - validate slot number for security
+            # Replace the move
             move_slot = slot + 1
             if move_slot not in [1, 2, 3, 4]:
                 await interaction.response.send_message("Invalid move slot!", ephemeral=True)
@@ -393,17 +272,13 @@ class MoveChoiceView(discord.ui.View):
             )
             
             # Remove from pending
-            try:
-                move_learning_cog = interaction.client.get_cog('MoveLearning')
-                if move_learning_cog and self.user_id in move_learning_cog.pending_moves:
-                    del move_learning_cog.pending_moves[self.user_id]
-            except Exception as e:
-                import logging
-                logging.exception(f"Error removing pending move: {e}")
+            move_learning_cog = interaction.client.get_cog('MoveLearning')
+            if move_learning_cog and self.user_id in move_learning_cog.pending_moves:
+                del move_learning_cog.pending_moves[self.user_id]
             
             embed = discord.Embed(
                 title="Move Learned!",
-                description=f"Your {self.pending['species_name']} forgot **{old_move}** and learned **{self.pending['new_move']}**!",
+                description=f"Your {self.pending['species_name']} forgot **{old_move.replace('_', ' ').title()}** and learned **{self.pending['new_move'].replace('_', ' ').title()}**!",
                 color=0x00ff00
             )
             
@@ -412,23 +287,19 @@ class MoveChoiceView(discord.ui.View):
             
         return replace_callback
         
-    async def cancel_callback(self, interaction):
+    async def ignore_callback(self, interaction):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("This isn't your choice!", ephemeral=True)
             return
             
         # Remove from pending
-        try:
-            move_learning_cog = interaction.client.get_cog('MoveLearning')
-            if move_learning_cog and self.user_id in move_learning_cog.pending_moves:
-                del move_learning_cog.pending_moves[self.user_id]
-        except Exception as e:
-            import logging
-            logging.exception(f"Error removing pending move: {e}")
+        move_learning_cog = interaction.client.get_cog('MoveLearning')
+        if move_learning_cog and self.user_id in move_learning_cog.pending_moves:
+            del move_learning_cog.pending_moves[self.user_id]
         
         embed = discord.Embed(
             title="Move Not Learned",
-            description=f"Your {self.pending['species_name']} did not learn **{self.pending['new_move']}**.",
+            description=f"Your {self.pending['species_name']} did not learn **{self.pending['new_move'].replace('_', ' ').title()}**.",
             color=0xe74c3c
         )
         
