@@ -5,82 +5,82 @@
             "Tackle"
         ],
         "7": [
-            "LeechSeed"
+            "Leech Seed"
         ],
         "13": [
-            "VineWhip"
+            "Vine Whip"
         ],
         "20": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "27": [
-            "RazorLeaf"
+            "Razor Leaf"
         ],
         "34": [
             "Growth"
         ],
         "41": [
-            "SleepPowder"
+            "Sleep Powder"
         ],
         "48": [
-            "SolarBeam"
+            "Solar Beam"
         ]
     },
     "Ivysaur": {
         "1": [
             "Growl",
-            "LeechSeed",
+            "Leech Seed",
             "Tackle"
         ],
         "7": [
-            "LeechSeed"
+            "Leech Seed"
         ],
         "13": [
-            "VineWhip"
+            "Vine Whip"
         ],
         "22": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "30": [
-            "RazorLeaf"
+            "Razor Leaf"
         ],
         "38": [
             "Growth"
         ],
         "46": [
-            "SleepPowder"
+            "Sleep Powder"
         ],
         "54": [
-            "SolarBeam"
+            "Solar Beam"
         ]
     },
     "Venusaur": {
         "1": [
             "Growl",
-            "LeechSeed",
+            "Leech Seed",
             "Tackle",
-            "VineWhip"
+            "Vine Whip"
         ],
         "7": [
-            "LeechSeed"
+            "Leech Seed"
         ],
         "13": [
-            "VineWhip"
+            "Vine Whip"
         ],
         "22": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "30": [
-            "RazorLeaf"
+            "Razor Leaf"
         ],
         "43": [
             "Growth"
         ],
         "55": [
-            "SleepPowder"
+            "Sleep Powder"
         ],
         "65": [
-            "SolarBeam"
+            "Solar Beam"
         ]
     },
     "Charmander": {
@@ -104,7 +104,7 @@
             "Flamethrower"
         ],
         "46": [
-            "FireSpin"
+            "Fire Spin"
         ]
     },
     "Charmeleon": {
@@ -129,7 +129,7 @@
             "Flamethrower"
         ],
         "56": [
-            "FireSpin"
+            "Fire Spin"
         ]
     },
     "Charizard": {
@@ -155,19 +155,19 @@
             "Flamethrower"
         ],
         "55": [
-            "FireSpin"
+            "Fire Spin"
         ]
     },
     "Squirtle": {
         "1": [
             "Tackle",
-            "TailWhip"
+            "Tail Whip"
         ],
         "8": [
             "Bubble"
         ],
         "15": [
-            "WaterGun"
+            "Water Gun"
         ],
         "22": [
             "Bite"
@@ -176,23 +176,23 @@
             "Withdraw"
         ],
         "35": [
-            "SkullBash"
+            "Skull Bash"
         ],
         "42": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Wartortle": {
         "1": [
             "Bubble",
             "Tackle",
-            "TailWhip"
+            "Tail Whip"
         ],
         "8": [
             "Bubble"
         ],
         "15": [
-            "WaterGun"
+            "Water Gun"
         ],
         "24": [
             "Bite"
@@ -201,24 +201,24 @@
             "Withdraw"
         ],
         "39": [
-            "SkullBash"
+            "Skull Bash"
         ],
         "47": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Blastoise": {
         "1": [
             "Bubble",
             "Tackle",
-            "TailWhip",
-            "WaterGun"
+            "Tail Whip",
+            "Water Gun"
         ],
         "8": [
             "Bubble"
         ],
         "15": [
-            "WaterGun"
+            "Water Gun"
         ],
         "24": [
             "Bite"
@@ -227,15 +227,15 @@
             "Withdraw"
         ],
         "42": [
-            "SkullBash"
+            "Skull Bash"
         ],
         "52": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Caterpie": {
         "1": [
-            "StringShot",
+            "String Shot",
             "Tackle"
         ]
     },
@@ -255,13 +255,13 @@
             "Confusion"
         ],
         "13": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "14": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "15": [
-            "SleepPowder"
+            "Sleep Powder"
         ],
         "18": [
             "Supersonic"
@@ -278,8 +278,8 @@
     },
     "Weedle": {
         "1": [
-            "PoisonSting",
-            "StringShot"
+            "Poison Sting",
+            "String Shot"
         ]
     },
     "Kakuna": {
@@ -289,13 +289,13 @@
     },
     "Beedrill": {
         "1": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "12": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "16": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "20": [
             "Twineedle"
@@ -304,7 +304,7 @@
             "Rage"
         ],
         "30": [
-            "PinMissile"
+            "Pin Missile"
         ],
         "35": [
             "Agility"
@@ -315,108 +315,108 @@
             "Gust"
         ],
         "5": [
-            "SandAttack"
+            "Sand Attack"
         ],
         "12": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "19": [
             "Whirlwind"
         ],
         "28": [
-            "WingAttack"
+            "Wing Attack"
         ],
         "36": [
             "Agility"
         ],
         "44": [
-            "MirrorMove"
+            "Mirror Move"
         ]
     },
     "Pidgeotto": {
         "1": [
             "Gust",
-            "SandAttack"
+            "Sand Attack"
         ],
         "5": [
-            "SandAttack"
+            "Sand Attack"
         ],
         "12": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "21": [
             "Whirlwind"
         ],
         "31": [
-            "WingAttack"
+            "Wing Attack"
         ],
         "40": [
             "Agility"
         ],
         "49": [
-            "MirrorMove"
+            "Mirror Move"
         ]
     },
     "Pidgeot": {
         "1": [
             "Gust",
-            "QuickAttack",
-            "SandAttack"
+            "Quick Attack",
+            "Sand Attack"
         ],
         "5": [
-            "SandAttack"
+            "Sand Attack"
         ],
         "12": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "21": [
             "Whirlwind"
         ],
         "31": [
-            "WingAttack"
+            "Wing Attack"
         ],
         "44": [
             "Agility"
         ],
         "54": [
-            "MirrorMove"
+            "Mirror Move"
         ]
     },
     "Rattata": {
         "1": [
             "Tackle",
-            "TailWhip"
+            "Tail Whip"
         ],
         "7": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "14": [
-            "HyperFang"
+            "Hyper Fang"
         ],
         "23": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "34": [
-            "SuperFang"
+            "Super Fang"
         ]
     },
     "Raticate": {
         "1": [
-            "QuickAttack",
+            "Quick Attack",
             "Tackle",
-            "TailWhip"
+            "Tail Whip"
         ],
         "7": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "14": [
-            "HyperFang"
+            "Hyper Fang"
         ],
         "27": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "41": [
-            "SuperFang"
+            "Super Fang"
         ]
     },
     "Spearow": {
@@ -428,13 +428,13 @@
             "Leer"
         ],
         "15": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "22": [
-            "MirrorMove"
+            "Mirror Move"
         ],
         "29": [
-            "DrillPeck"
+            "Drill Peck"
         ],
         "36": [
             "Agility"
@@ -450,13 +450,13 @@
             "Leer"
         ],
         "15": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "25": [
-            "MirrorMove"
+            "Mirror Move"
         ],
         "34": [
-            "DrillPeck"
+            "Drill Peck"
         ],
         "43": [
             "Agility"
@@ -468,7 +468,7 @@
             "Wrap"
         ],
         "10": [
-            "PoisonSting"
+            "Poison Sting"
         ],
         "17": [
             "Bite"
@@ -486,11 +486,11 @@
     "Arbok": {
         "1": [
             "Leer",
-            "PoisonSting",
+            "Poison Sting",
             "Wrap"
         ],
         "10": [
-            "PoisonSting"
+            "Poison Sting"
         ],
         "17": [
             "Bite"
@@ -508,19 +508,19 @@
     "Pikachu": {
         "1": [
             "Growl",
-            "ThunderShock"
+            "Thunder Shock"
         ],
         "6": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "8": [
-            "ThunderWave"
+            "Thunder Wave"
         ],
         "11": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "15": [
-            "DoubleTeam"
+            "Double Team"
         ],
         "20": [
             "Slam"
@@ -535,14 +535,14 @@
             "Thunder"
         ],
         "50": [
-            "LightScreen"
+            "Light Screen"
         ]
     },
     "Raichu": {
         "1": [
             "Growl",
-            "ThunderShock",
-            "ThunderWave"
+            "Thunder Shock",
+            "Thunder Wave"
         ]
     },
     "Sandshrew": {
@@ -550,40 +550,40 @@
             "Scratch"
         ],
         "10": [
-            "SandAttack"
+            "Sand Attack"
         ],
         "17": [
             "Slash"
         ],
         "24": [
-            "PoisonSting"
+            "Poison Sting"
         ],
         "31": [
             "Swift"
         ],
         "38": [
-            "FurySwipes"
+            "Fury Swipes"
         ]
     },
     "Sandslash": {
         "1": [
-            "SandAttack",
+            "Sand Attack",
             "Scratch"
         ],
         "10": [
-            "SandAttack"
+            "Sand Attack"
         ],
         "17": [
             "Slash"
         ],
         "27": [
-            "PoisonSting"
+            "Poison Sting"
         ],
         "36": [
             "Swift"
         ],
         "47": [
-            "FurySwipes"
+            "Fury Swipes"
         ]
     },
     "Nidoran\u2640": {
@@ -595,19 +595,19 @@
             "Scratch"
         ],
         "12": [
-            "DoubleKick"
+            "Double Kick"
         ],
         "17": [
-            "PoisonSting"
+            "Poison Sting"
         ],
         "23": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "30": [
             "Bite"
         ],
         "38": [
-            "FurySwipes"
+            "Fury Swipes"
         ]
     },
     "Nidorina": {
@@ -620,36 +620,36 @@
             "Scratch"
         ],
         "12": [
-            "DoubleKick"
+            "Double Kick"
         ],
         "19": [
-            "PoisonSting"
+            "Poison Sting"
         ],
         "27": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "36": [
             "Bite"
         ],
         "46": [
-            "FurySwipes"
+            "Fury Swipes"
         ]
     },
     "Nidoqueen": {
         "1": [
-            "BodySlam",
+            "Body Slam",
             "Scratch",
             "Tackle",
-            "TailWhip"
+            "Tail Whip"
         ],
         "8": [
             "Scratch"
         ],
         "12": [
-            "DoubleKick"
+            "Double Kick"
         ],
         "23": [
-            "BodySlam"
+            "Body Slam"
         ]
     },
     "Nidoran\u2642": {
@@ -658,61 +658,61 @@
             "Tackle"
         ],
         "8": [
-            "HornAttack"
+            "Horn Attack"
         ],
         "12": [
-            "DoubleKick"
+            "Double Kick"
         ],
         "17": [
-            "PoisonSting"
+            "Poison Sting"
         ],
         "23": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "30": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "38": [
-            "HornDrill"
+            "Horn Drill"
         ]
     },
     "Nidorino": {
         "1": [
-            "HornAttack",
+            "Horn Attack",
             "Leer",
             "Tackle"
         ],
         "8": [
-            "HornAttack"
+            "Horn Attack"
         ],
         "12": [
-            "DoubleKick"
+            "Double Kick"
         ],
         "19": [
-            "PoisonSting"
+            "Poison Sting"
         ],
         "27": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "36": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "46": [
-            "HornDrill"
+            "Horn Drill"
         ]
     },
     "Nidoking": {
         "1": [
-            "HornAttack",
-            "PoisonSting",
+            "Horn Attack",
+            "Poison Sting",
             "Tackle",
             "Thrash"
         ],
         "8": [
-            "HornAttack"
+            "Horn Attack"
         ],
         "12": [
-            "DoubleKick"
+            "Double Kick"
         ],
         "23": [
             "Thrash"
@@ -727,7 +727,7 @@
             "Sing"
         ],
         "18": [
-            "DoubleSlap"
+            "Double Slap"
         ],
         "24": [
             "Minimize"
@@ -736,15 +736,15 @@
             "Metronome"
         ],
         "39": [
-            "DefenseCurl"
+            "Defense Curl"
         ],
         "48": [
-            "LightScreen"
+            "Light Screen"
         ]
     },
     "Clefable": {
         "1": [
-            "DoubleSlap",
+            "Double Slap",
             "Metronome",
             "Minimize",
             "Sing"
@@ -753,30 +753,30 @@
     "Vulpix": {
         "1": [
             "Ember",
-            "TailWhip"
+            "Tail Whip"
         ],
         "16": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "21": [
             "Roar"
         ],
         "28": [
-            "ConfuseRay"
+            "Confuse Ray"
         ],
         "35": [
             "Flamethrower"
         ],
         "42": [
-            "FireSpin"
+            "Fire Spin"
         ]
     },
     "Ninetales": {
         "1": [
             "Ember",
-            "QuickAttack",
+            "Quick Attack",
             "Roar",
-            "TailWhip"
+            "Tail Whip"
         ]
     },
     "Jigglypuff": {
@@ -790,32 +790,32 @@
             "Disable"
         ],
         "19": [
-            "DefenseCurl"
+            "Defense Curl"
         ],
         "24": [
-            "DoubleSlap"
+            "Double Slap"
         ],
         "29": [
             "Rest"
         ],
         "34": [
-            "BodySlam"
+            "Body Slam"
         ],
         "39": [
-            "DoubleEdge"
+            "Double Edge"
         ]
     },
     "Wigglytuff": {
         "1": [
-            "DefenseCurl",
+            "Defense Curl",
             "Disable",
-            "DoubleSlap",
+            "Double Slap",
             "Sing"
         ]
     },
     "Zubat": {
         "1": [
-            "LeechLife"
+            "Leech Life"
         ],
         "10": [
             "Supersonic"
@@ -824,10 +824,10 @@
             "Bite"
         ],
         "21": [
-            "ConfuseRay"
+            "Confuse Ray"
         ],
         "28": [
-            "WingAttack"
+            "Wing Attack"
         ],
         "36": [
             "Haze"
@@ -836,7 +836,7 @@
     "Golbat": {
         "1": [
             "Bite",
-            "LeechLife",
+            "Leech Life",
             "Screech"
         ],
         "10": [
@@ -846,10 +846,10 @@
             "Bite"
         ],
         "21": [
-            "ConfuseRay"
+            "Confuse Ray"
         ],
         "32": [
-            "WingAttack"
+            "Wing Attack"
         ],
         "43": [
             "Haze"
@@ -860,64 +860,64 @@
             "Absorb"
         ],
         "15": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "17": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "19": [
-            "SleepPowder"
+            "Sleep Powder"
         ],
         "24": [
             "Acid"
         ],
         "33": [
-            "PetalDance"
+            "Petal Dance"
         ],
         "46": [
-            "SolarBeam"
+            "Solar Beam"
         ]
     },
     "Gloom": {
         "1": [
             "Absorb",
-            "PoisonPowder",
-            "StunSpore"
+            "Poison Powder",
+            "Stun Spore"
         ],
         "15": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "17": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "19": [
-            "SleepPowder"
+            "Sleep Powder"
         ],
         "28": [
             "Acid"
         ],
         "38": [
-            "PetalDance"
+            "Petal Dance"
         ],
         "52": [
-            "SolarBeam"
+            "Solar Beam"
         ]
     },
     "Vileplume": {
         "1": [
             "Acid",
-            "PetalDance",
-            "SleepPowder",
-            "StunSpore"
+            "Petal Dance",
+            "Sleep Powder",
+            "Stun Spore"
         ],
         "15": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "17": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "19": [
-            "SleepPowder"
+            "Sleep Powder"
         ]
     },
     "Paras": {
@@ -925,10 +925,10 @@
             "Scratch"
         ],
         "13": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "20": [
-            "LeechLife"
+            "Leech Life"
         ],
         "27": [
             "Spore"
@@ -942,15 +942,15 @@
     },
     "Parasect": {
         "1": [
-            "LeechLife",
+            "Leech Life",
             "Scratch",
-            "StunSpore"
+            "Stun Spore"
         ],
         "13": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "20": [
-            "LeechLife"
+            "Leech Life"
         ],
         "30": [
             "Spore"
@@ -974,19 +974,19 @@
             "Confusion"
         ],
         "22": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "27": [
-            "LeechLife"
+            "Leech Life"
         ],
         "30": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "35": [
             "Psybeam"
         ],
         "38": [
-            "SleepPowder"
+            "Sleep Powder"
         ],
         "43": [
             "Psychic"
@@ -1000,19 +1000,19 @@
             "Tackle"
         ],
         "22": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "27": [
-            "LeechLife"
+            "Leech Life"
         ],
         "30": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "38": [
             "Psybeam"
         ],
         "43": [
-            "SleepPowder"
+            "Sleep Powder"
         ],
         "50": [
             "Psychic"
@@ -1029,7 +1029,7 @@
             "Dig"
         ],
         "24": [
-            "SandAttack"
+            "Sand Attack"
         ],
         "31": [
             "Slash"
@@ -1051,7 +1051,7 @@
             "Dig"
         ],
         "24": [
-            "SandAttack"
+            "Sand Attack"
         ],
         "35": [
             "Slash"
@@ -1069,13 +1069,13 @@
             "Bite"
         ],
         "17": [
-            "PayDay"
+            "Pay Day"
         ],
         "24": [
             "Screech"
         ],
         "33": [
-            "FurySwipes"
+            "Fury Swipes"
         ],
         "44": [
             "Slash"
@@ -1092,13 +1092,13 @@
             "Bite"
         ],
         "17": [
-            "PayDay"
+            "Pay Day"
         ],
         "24": [
             "Screech"
         ],
         "37": [
-            "FurySwipes"
+            "Fury Swipes"
         ],
         "51": [
             "Slash"
@@ -1109,7 +1109,7 @@
             "Scratch"
         ],
         "28": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "31": [
             "Disable"
@@ -1118,20 +1118,20 @@
             "Confusion"
         ],
         "43": [
-            "FurySwipes"
+            "Fury Swipes"
         ],
         "52": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Golduck": {
         "1": [
             "Disable",
             "Scratch",
-            "TailWhip"
+            "Tail Whip"
         ],
         "28": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "31": [
             "Disable"
@@ -1140,10 +1140,10 @@
             "Confusion"
         ],
         "48": [
-            "FurySwipes"
+            "Fury Swipes"
         ],
         "59": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Mankey": {
@@ -1152,19 +1152,19 @@
             "Scratch"
         ],
         "9": [
-            "LowKick"
+            "Low Kick"
         ],
         "15": [
-            "KarateChop"
+            "Karate Chop"
         ],
         "21": [
-            "FurySwipes"
+            "Fury Swipes"
         ],
         "27": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "33": [
-            "SeismicToss"
+            "Seismic Toss"
         ],
         "39": [
             "Thrash"
@@ -1175,28 +1175,28 @@
     },
     "Primeape": {
         "1": [
-            "KarateChop",
+            "Karate Chop",
             "Leer",
-            "LowKick",
+            "Low Kick",
             "Scratch"
         ],
         "9": [
-            "LowKick"
+            "Low Kick"
         ],
         "15": [
-            "KarateChop"
+            "Karate Chop"
         ],
         "21": [
-            "FurySwipes"
+            "Fury Swipes"
         ],
         "27": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "28": [
             "Rage"
         ],
         "37": [
-            "SeismicToss"
+            "Seismic Toss"
         ],
         "45": [
             "Screech"
@@ -1217,7 +1217,7 @@
             "Leer"
         ],
         "30": [
-            "TakeDown"
+            "Take Down"
         ],
         "39": [
             "Agility"
@@ -1231,7 +1231,7 @@
             "Ember",
             "Leer",
             "Roar",
-            "TakeDown"
+            "Take Down"
         ]
     },
     "Poliwag": {
@@ -1242,58 +1242,58 @@
             "Hypnosis"
         ],
         "19": [
-            "WaterGun"
+            "Water Gun"
         ],
         "25": [
-            "DoubleSlap"
+            "Double Slap"
         ],
         "31": [
-            "BodySlam"
+            "Body Slam"
         ],
         "38": [
             "Amnesia"
         ],
         "45": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Poliwhirl": {
         "1": [
             "Bubble",
             "Hypnosis",
-            "WaterGun"
+            "Water Gun"
         ],
         "16": [
             "Hypnosis"
         ],
         "19": [
-            "WaterGun"
+            "Water Gun"
         ],
         "26": [
-            "DoubleSlap"
+            "Double Slap"
         ],
         "33": [
-            "BodySlam"
+            "Body Slam"
         ],
         "41": [
             "Amnesia"
         ],
         "49": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Poliwrath": {
         "1": [
-            "BodySlam",
-            "DoubleSlap",
+            "Body Slam",
+            "Double Slap",
             "Hypnosis",
-            "WaterGun"
+            "Water Gun"
         ],
         "16": [
             "Hypnosis"
         ],
         "19": [
-            "WaterGun"
+            "Water Gun"
         ]
     },
     "Abra": {
@@ -1351,19 +1351,19 @@
     },
     "Machop": {
         "1": [
-            "KarateChop"
+            "Karate Chop"
         ],
         "20": [
-            "LowKick"
+            "Low Kick"
         ],
         "25": [
             "Leer"
         ],
         "32": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "39": [
-            "SeismicToss"
+            "Seismic Toss"
         ],
         "46": [
             "Submission"
@@ -1371,21 +1371,21 @@
     },
     "Machoke": {
         "1": [
-            "KarateChop",
+            "Karate Chop",
             "Leer",
-            "LowKick"
+            "Low Kick"
         ],
         "20": [
-            "LowKick"
+            "Low Kick"
         ],
         "25": [
             "Leer"
         ],
         "36": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "44": [
-            "SeismicToss"
+            "Seismic Toss"
         ],
         "52": [
             "Submission"
@@ -1393,21 +1393,21 @@
     },
     "Machamp": {
         "1": [
-            "KarateChop",
+            "Karate Chop",
             "Leer",
-            "LowKick"
+            "Low Kick"
         ],
         "20": [
-            "LowKick"
+            "Low Kick"
         ],
         "25": [
             "Leer"
         ],
         "36": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "44": [
-            "SeismicToss"
+            "Seismic Toss"
         ],
         "52": [
             "Submission"
@@ -1416,25 +1416,25 @@
     "Bellsprout": {
         "1": [
             "Growth",
-            "VineWhip"
+            "Vine Whip"
         ],
         "13": [
             "Wrap"
         ],
         "15": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "18": [
-            "SleepPowder"
+            "Sleep Powder"
         ],
         "21": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "26": [
             "Acid"
         ],
         "33": [
-            "RazorLeaf"
+            "Razor Leaf"
         ],
         "42": [
             "Slam"
@@ -1443,26 +1443,26 @@
     "Weepinbell": {
         "1": [
             "Growth",
-            "VineWhip",
+            "Vine Whip",
             "Wrap"
         ],
         "13": [
             "Wrap"
         ],
         "15": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "18": [
-            "SleepPowder"
+            "Sleep Powder"
         ],
         "23": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "29": [
             "Acid"
         ],
         "38": [
-            "RazorLeaf"
+            "Razor Leaf"
         ],
         "49": [
             "Slam"
@@ -1471,18 +1471,18 @@
     "Victreebel": {
         "1": [
             "Acid",
-            "RazorLeaf",
-            "SleepPowder",
-            "StunSpore"
+            "Razor Leaf",
+            "Sleep Powder",
+            "Stun Spore"
         ],
         "13": [
             "Wrap"
         ],
         "15": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "18": [
-            "SleepPowder"
+            "Sleep Powder"
         ]
     },
     "Tentacool": {
@@ -1496,10 +1496,10 @@
             "Wrap"
         ],
         "18": [
-            "PoisonSting"
+            "Poison Sting"
         ],
         "22": [
-            "WaterGun"
+            "Water Gun"
         ],
         "27": [
             "Constrict"
@@ -1511,7 +1511,7 @@
             "Screech"
         ],
         "48": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Tentacruel": {
@@ -1527,10 +1527,10 @@
             "Wrap"
         ],
         "18": [
-            "PoisonSting"
+            "Poison Sting"
         ],
         "22": [
-            "WaterGun"
+            "Water Gun"
         ],
         "27": [
             "Constrict"
@@ -1542,7 +1542,7 @@
             "Screech"
         ],
         "50": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Geodude": {
@@ -1550,13 +1550,13 @@
             "Tackle"
         ],
         "11": [
-            "DefenseCurl"
+            "Defense Curl"
         ],
         "16": [
-            "RockThrow"
+            "Rock Throw"
         ],
         "21": [
-            "Selfdestruct"
+            "Self Destruct"
         ],
         "26": [
             "Harden"
@@ -1570,17 +1570,17 @@
     },
     "Graveler": {
         "1": [
-            "DefenseCurl",
+            "Defense Curl",
             "Tackle"
         ],
         "11": [
-            "DefenseCurl"
+            "Defense Curl"
         ],
         "16": [
-            "RockThrow"
+            "Rock Throw"
         ],
         "21": [
-            "Selfdestruct"
+            "Self Destruct"
         ],
         "29": [
             "Harden"
@@ -1594,17 +1594,17 @@
     },
     "Golem": {
         "1": [
-            "DefenseCurl",
+            "Defense Curl",
             "Tackle"
         ],
         "11": [
-            "DefenseCurl"
+            "Defense Curl"
         ],
         "16": [
-            "RockThrow"
+            "Rock Throw"
         ],
         "21": [
-            "Selfdestruct"
+            "Self Destruct"
         ],
         "29": [
             "Harden"
@@ -1621,7 +1621,7 @@
             "Ember"
         ],
         "30": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "32": [
             "Stomp"
@@ -1630,10 +1630,10 @@
             "Growl"
         ],
         "39": [
-            "FireSpin"
+            "Fire Spin"
         ],
         "43": [
-            "TakeDown"
+            "Take Down"
         ],
         "48": [
             "Agility"
@@ -1644,10 +1644,10 @@
             "Ember",
             "Growl",
             "Stomp",
-            "TailWhip"
+            "Tail Whip"
         ],
         "30": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "32": [
             "Stomp"
@@ -1656,10 +1656,10 @@
             "Growl"
         ],
         "39": [
-            "FireSpin"
+            "Fire Spin"
         ],
         "47": [
-            "TakeDown"
+            "Take Down"
         ],
         "55": [
             "Agility"
@@ -1679,7 +1679,7 @@
             "Growl"
         ],
         "33": [
-            "WaterGun"
+            "Water Gun"
         ],
         "40": [
             "Amnesia"
@@ -1704,7 +1704,7 @@
             "Growl"
         ],
         "33": [
-            "WaterGun"
+            "Water Gun"
         ],
         "37": [
             "Withdraw"
@@ -1721,16 +1721,16 @@
             "Tackle"
         ],
         "21": [
-            "SonicBoom"
+            "Sonic Boom"
         ],
         "25": [
-            "ThunderShock"
+            "Thunder Shock"
         ],
         "29": [
             "Supersonic"
         ],
         "35": [
-            "ThunderWave"
+            "Thunder Wave"
         ],
         "41": [
             "Swift"
@@ -1741,21 +1741,21 @@
     },
     "Magneton": {
         "1": [
-            "SonicBoom",
+            "Sonic Boom",
             "Tackle",
-            "ThunderShock"
+            "Thunder Shock"
         ],
         "21": [
-            "SonicBoom"
+            "Sonic Boom"
         ],
         "25": [
-            "ThunderShock"
+            "Thunder Shock"
         ],
         "29": [
             "Supersonic"
         ],
         "38": [
-            "ThunderWave"
+            "Thunder Wave"
         ],
         "46": [
             "Swift"
@@ -1767,16 +1767,16 @@
     "Farfetch'd": {
         "1": [
             "Peck",
-            "SandAttack"
+            "Sand Attack"
         ],
         "7": [
             "Leer"
         ],
         "15": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "23": [
-            "SwordsDance"
+            "Swords Dance"
         ],
         "31": [
             "Agility"
@@ -1793,16 +1793,16 @@
             "Growl"
         ],
         "24": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "30": [
-            "DrillPeck"
+            "Drill Peck"
         ],
         "36": [
             "Rage"
         ],
         "40": [
-            "TriAttack"
+            "Tri Attack"
         ],
         "44": [
             "Agility"
@@ -1810,7 +1810,7 @@
     },
     "Dodrio": {
         "1": [
-            "FuryAttack",
+            "Fury Attack",
             "Growl",
             "Peck"
         ],
@@ -1818,16 +1818,16 @@
             "Growl"
         ],
         "24": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "30": [
-            "DrillPeck"
+            "Drill Peck"
         ],
         "39": [
             "Rage"
         ],
         "45": [
-            "TriAttack"
+            "Tri Attack"
         ],
         "51": [
             "Agility"
@@ -1841,21 +1841,21 @@
             "Growl"
         ],
         "35": [
-            "AuroraBeam"
+            "Aurora Beam"
         ],
         "40": [
             "Rest"
         ],
         "45": [
-            "TakeDown"
+            "Take Down"
         ],
         "50": [
-            "IceBeam"
+            "Ice Beam"
         ]
     },
     "Dewgong": {
         "1": [
-            "AuroraBeam",
+            "Aurora Beam",
             "Growl",
             "Headbutt"
         ],
@@ -1863,16 +1863,16 @@
             "Growl"
         ],
         "35": [
-            "AuroraBeam"
+            "Aurora Beam"
         ],
         "44": [
             "Rest"
         ],
         "50": [
-            "TakeDown"
+            "Take Down"
         ],
         "56": [
-            "IceBeam"
+            "Ice Beam"
         ]
     },
     "Grimer": {
@@ -1881,7 +1881,7 @@
             "Pound"
         ],
         "30": [
-            "PoisonGas"
+            "Poison Gas"
         ],
         "33": [
             "Minimize"
@@ -1896,17 +1896,17 @@
             "Screech"
         ],
         "55": [
-            "AcidArmor"
+            "Acid Armor"
         ]
     },
     "Muk": {
         "1": [
             "Disable",
-            "PoisonGas",
+            "Poison Gas",
             "Pound"
         ],
         "30": [
-            "PoisonGas"
+            "Poison Gas"
         ],
         "33": [
             "Minimize"
@@ -1921,7 +1921,7 @@
             "Screech"
         ],
         "60": [
-            "AcidArmor"
+            "Acid Armor"
         ]
     },
     "Shellder": {
@@ -1936,63 +1936,63 @@
             "Clamp"
         ],
         "30": [
-            "AuroraBeam"
+            "Aurora Beam"
         ],
         "39": [
             "Leer"
         ],
         "50": [
-            "IceBeam"
+            "Ice Beam"
         ]
     },
     "Cloyster": {
         "1": [
-            "AuroraBeam",
+            "Aurora Beam",
             "Clamp",
             "Supersonic",
             "Withdraw"
         ],
         "50": [
-            "SpikeCannon"
+            "Spike Cannon"
         ]
     },
     "Gastly": {
         "1": [
-            "ConfuseRay",
+            "Confuse Ray",
             "Lick",
-            "NightShade"
+            "Night Shade"
         ],
         "27": [
             "Hypnosis"
         ],
         "35": [
-            "DreamEater"
+            "Dream Eater"
         ]
     },
     "Haunter": {
         "1": [
-            "ConfuseRay",
+            "Confuse Ray",
             "Lick",
-            "NightShade"
+            "Night Shade"
         ],
         "29": [
             "Hypnosis"
         ],
         "38": [
-            "DreamEater"
+            "Dream Eater"
         ]
     },
     "Gengar": {
         "1": [
-            "ConfuseRay",
+            "Confuse Ray",
             "Lick",
-            "NightShade"
+            "Night Shade"
         ],
         "29": [
             "Hypnosis"
         ],
         "38": [
-            "DreamEater"
+            "Dream Eater"
         ]
     },
     "Onix": {
@@ -2004,7 +2004,7 @@
             "Bind"
         ],
         "19": [
-            "RockThrow"
+            "Rock Throw"
         ],
         "25": [
             "Rage"
@@ -2031,7 +2031,7 @@
             "Headbutt"
         ],
         "29": [
-            "PoisonGas"
+            "Poison Gas"
         ],
         "32": [
             "Psychic"
@@ -2057,7 +2057,7 @@
             "Headbutt"
         ],
         "33": [
-            "PoisonGas"
+            "Poison Gas"
         ],
         "37": [
             "Psychic"
@@ -2072,7 +2072,7 @@
             "Leer"
         ],
         "20": [
-            "ViceGrip"
+            "Vise Grip"
         ],
         "25": [
             "Guillotine"
@@ -2091,10 +2091,10 @@
         "1": [
             "Bubble",
             "Leer",
-            "ViceGrip"
+            "Vise Grip"
         ],
         "20": [
-            "ViceGrip"
+            "Vise Grip"
         ],
         "25": [
             "Guillotine"
@@ -2115,13 +2115,13 @@
             "Tackle"
         ],
         "17": [
-            "SonicBoom"
+            "Sonic Boom"
         ],
         "22": [
-            "Selfdestruct"
+            "Self Destruct"
         ],
         "29": [
-            "LightScreen"
+            "Light Screen"
         ],
         "36": [
             "Swift"
@@ -2133,17 +2133,17 @@
     "Electrode": {
         "1": [
             "Screech",
-            "SonicBoom",
+            "Sonic Boom",
             "Tackle"
         ],
         "17": [
-            "SonicBoom"
+            "Sonic Boom"
         ],
         "22": [
-            "Selfdestruct"
+            "Self Destruct"
         ],
         "29": [
-            "LightScreen"
+            "Light Screen"
         ],
         "40": [
             "Swift"
@@ -2161,19 +2161,19 @@
             "Reflect"
         ],
         "28": [
-            "LeechSeed"
+            "Leech Seed"
         ],
         "32": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "37": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "42": [
-            "SolarBeam"
+            "Solar Beam"
         ],
         "48": [
-            "SleepPowder"
+            "Sleep Powder"
         ]
     },
     "Exeggutor": {
@@ -2190,10 +2190,10 @@
             "Growl"
         ],
         "10": [
-            "BoneClub"
+            "Bone Club"
         ],
         "13": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "18": [
             "Headbutt"
@@ -2202,7 +2202,7 @@
             "Leer"
         ],
         "31": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "38": [
             "Thrash"
@@ -2216,14 +2216,14 @@
     },
     "Marowak": {
         "1": [
-            "BoneClub",
-            "TailWhip"
+            "Bone Club",
+            "Tail Whip"
         ],
         "10": [
-            "BoneClub"
+            "Bone Club"
         ],
         "13": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "18": [
             "Headbutt"
@@ -2232,7 +2232,7 @@
             "Leer"
         ],
         "33": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "41": [
             "Thrash"
@@ -2246,41 +2246,41 @@
     },
     "Hitmonlee": {
         "1": [
-            "DoubleKick",
+            "Double Kick",
             "Meditate"
         ],
         "33": [
-            "RollingKick"
+            "Rolling Kick"
         ],
         "38": [
-            "JumpKick"
+            "Jump Kick"
         ],
         "43": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "48": [
-            "HiJumpKick"
+            "High Jump Kick"
         ],
         "53": [
-            "MegaKick"
+            "Mega Kick"
         ]
     },
     "Hitmonchan": {
         "1": [
             "Agility",
-            "CometPunch"
+            "Comet Punch"
         ],
         "33": [
-            "FirePunch"
+            "Fire Punch"
         ],
         "38": [
-            "IcePunch"
+            "Ice Punch"
         ],
         "43": [
-            "ThunderPunch"
+            "Thunder Punch"
         ],
         "48": [
-            "MegaPunch"
+            "Mega Punch"
         ],
         "53": [
             "Counter"
@@ -2298,7 +2298,7 @@
             "Disable"
         ],
         "23": [
-            "DefenseCurl"
+            "Defense Curl"
         ],
         "31": [
             "Slam"
@@ -2316,10 +2316,10 @@
             "Sludge"
         ],
         "37": [
-            "SmokeScreen"
+            "Smokescreen"
         ],
         "40": [
-            "Selfdestruct"
+            "Self Destruct"
         ],
         "45": [
             "Haze"
@@ -2338,10 +2338,10 @@
             "Sludge"
         ],
         "39": [
-            "SmokeScreen"
+            "Smokescreen"
         ],
         "43": [
-            "Selfdestruct"
+            "Self Destruct"
         ],
         "49": [
             "Haze"
@@ -2352,60 +2352,60 @@
     },
     "Rhyhorn": {
         "1": [
-            "FuryAttack",
-            "HornAttack",
+            "Fury Attack",
+            "Horn Attack",
             "Stomp",
-            "TailWhip"
+            "Tail Whip"
         ],
         "30": [
             "Stomp"
         ],
         "35": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "40": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "45": [
-            "HornDrill"
+            "Horn Drill"
         ],
         "50": [
             "Leer"
         ],
         "55": [
-            "TakeDown"
+            "Take Down"
         ]
     },
     "Rhydon": {
         "1": [
-            "HornAttack"
+            "Horn Attack"
         ],
         "30": [
             "Stomp"
         ],
         "35": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "40": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "48": [
-            "HornDrill"
+            "Horn Drill"
         ],
         "55": [
             "Leer"
         ],
         "64": [
-            "TakeDown"
+            "Take Down"
         ]
     },
     "Chansey": {
         "1": [
             "Pound",
-            "TailWhip"
+            "Tail Whip"
         ],
         "12": [
-            "DoubleSlap"
+            "Double Slap"
         ],
         "24": [
             "Sing"
@@ -2417,13 +2417,13 @@
             "Minimize"
         ],
         "44": [
-            "DefenseCurl"
+            "Defense Curl"
         ],
         "48": [
-            "LightScreen"
+            "Light Screen"
         ],
         "54": [
-            "DoubleEdge"
+            "Double Edge"
         ]
     },
     "Tangela": {
@@ -2437,16 +2437,16 @@
             "Absorb"
         ],
         "29": [
-            "VineWhip"
+            "Vine Whip"
         ],
         "32": [
-            "PoisonPowder"
+            "Poison Powder"
         ],
         "36": [
-            "StunSpore"
+            "Stun Spore"
         ],
         "39": [
-            "SleepPowder"
+            "Sleep Powder"
         ],
         "45": [
             "Slam"
@@ -2457,23 +2457,23 @@
     },
     "Kangaskhan": {
         "1": [
-            "CometPunch",
+            "Comet Punch",
             "Rage"
         ],
         "26": [
             "Bite"
         ],
         "31": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "36": [
-            "MegaPunch"
+            "Mega Punch"
         ],
         "41": [
             "Leer"
         ],
         "46": [
-            "DizzyPunch"
+            "Dizzy Punch"
         ]
     },
     "Horsea": {
@@ -2481,61 +2481,61 @@
             "Bubble"
         ],
         "19": [
-            "SmokeScreen"
+            "Smokescreen"
         ],
         "24": [
             "Leer"
         ],
         "30": [
-            "WaterGun"
+            "Water Gun"
         ],
         "37": [
             "Agility"
         ],
         "45": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Seadra": {
         "1": [
             "Bubble",
-            "SmokeScreen"
+            "Smokescreen"
         ],
         "19": [
-            "SmokeScreen"
+            "Smokescreen"
         ],
         "24": [
             "Leer"
         ],
         "30": [
-            "WaterGun"
+            "Water Gun"
         ],
         "41": [
             "Agility"
         ],
         "52": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Goldeen": {
         "1": [
             "Peck",
-            "TailWhip"
+            "Tail Whip"
         ],
         "19": [
             "Supersonic"
         ],
         "24": [
-            "HornAttack"
+            "Horn Attack"
         ],
         "30": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "37": [
             "Waterfall"
         ],
         "45": [
-            "HornDrill"
+            "Horn Drill"
         ],
         "54": [
             "Agility"
@@ -2545,22 +2545,22 @@
         "1": [
             "Peck",
             "Supersonic",
-            "TailWhip"
+            "Tail Whip"
         ],
         "19": [
             "Supersonic"
         ],
         "24": [
-            "HornAttack"
+            "Horn Attack"
         ],
         "30": [
-            "FuryAttack"
+            "Fury Attack"
         ],
         "39": [
             "Waterfall"
         ],
         "48": [
-            "HornDrill"
+            "Horn Drill"
         ],
         "54": [
             "Agility"
@@ -2571,7 +2571,7 @@
             "Tackle"
         ],
         "17": [
-            "WaterGun"
+            "Water Gun"
         ],
         "22": [
             "Harden"
@@ -2586,17 +2586,17 @@
             "Minimize"
         ],
         "42": [
-            "LightScreen"
+            "Light Screen"
         ],
         "47": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Starmie": {
         "1": [
             "Harden",
             "Tackle",
-            "WaterGun"
+            "Water Gun"
         ]
     },
     "Mr. Mime": {
@@ -2608,10 +2608,10 @@
             "Confusion"
         ],
         "23": [
-            "LightScreen"
+            "Light Screen"
         ],
         "31": [
-            "DoubleSlap"
+            "Double Slap"
         ],
         "39": [
             "Meditate"
@@ -2622,46 +2622,46 @@
     },
     "Scyther": {
         "1": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "17": [
             "Leer"
         ],
         "20": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "24": [
-            "DoubleTeam"
+            "Double Team"
         ],
         "29": [
             "Slash"
         ],
         "35": [
-            "SwordsDance"
+            "Swords Dance"
         ],
         "42": [
             "Agility"
         ],
         "50": [
-            "WingAttack"
+            "Wing Attack"
         ]
     },
     "Jynx": {
         "1": [
-            "LovelyKiss",
+            "Lovely Kiss",
             "Pound"
         ],
         "18": [
             "Lick"
         ],
         "23": [
-            "DoubleSlap"
+            "Double Slap"
         ],
         "31": [
-            "IcePunch"
+            "Ice Punch"
         ],
         "39": [
-            "BodySlam"
+            "Body Slam"
         ],
         "47": [
             "Thrash"
@@ -2673,19 +2673,19 @@
     "Electabuzz": {
         "1": [
             "Leer",
-            "QuickAttack"
+            "Quick Attack"
         ],
         "34": [
-            "ThunderShock"
+            "Thunder Shock"
         ],
         "37": [
             "Screech"
         ],
         "42": [
-            "ThunderPunch"
+            "Thunder Punch"
         ],
         "49": [
-            "LightScreen"
+            "Light Screen"
         ],
         "54": [
             "Thunder"
@@ -2699,13 +2699,13 @@
             "Leer"
         ],
         "39": [
-            "ConfuseRay"
+            "Confuse Ray"
         ],
         "43": [
-            "FirePunch"
+            "Fire Punch"
         ],
         "48": [
-            "SmokeScreen"
+            "Smokescreen"
         ],
         "52": [
             "Smog"
@@ -2716,19 +2716,19 @@
     },
     "Pinsir": {
         "1": [
-            "ViceGrip"
+            "Vise Grip"
         ],
         "21": [
             "Bind"
         ],
         "25": [
-            "SeismicToss"
+            "Seismic Toss"
         ],
         "30": [
             "Guillotine"
         ],
         "36": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "43": [
             "Harden"
@@ -2737,7 +2737,7 @@
             "Slash"
         ],
         "54": [
-            "SwordsDance"
+            "Swords Dance"
         ]
     },
     "Tauros": {
@@ -2748,7 +2748,7 @@
             "Stomp"
         ],
         "28": [
-            "TailWhip"
+            "Tail Whip"
         ],
         "35": [
             "Leer"
@@ -2757,7 +2757,7 @@
             "Rage"
         ],
         "51": [
-            "TakeDown"
+            "Take Down"
         ]
     },
     "Magikarp": {
@@ -2776,22 +2776,22 @@
             "Bite"
         ],
         "25": [
-            "DragonRage"
+            "Dragon Rage"
         ],
         "32": [
             "Leer"
         ],
         "41": [
-            "HydroPump"
+            "Hydro Pump"
         ],
         "52": [
-            "HyperBeam"
+            "Hyper Beam"
         ]
     },
     "Lapras": {
         "1": [
             "Growl",
-            "WaterGun"
+            "Water Gun"
         ],
         "16": [
             "Sing"
@@ -2800,16 +2800,16 @@
             "Mist"
         ],
         "25": [
-            "BodySlam"
+            "Body Slam"
         ],
         "31": [
-            "ConfuseRay"
+            "Confuse Ray"
         ],
         "38": [
-            "IceBeam"
+            "Ice Beam"
         ],
         "46": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Ditto": {
@@ -2820,84 +2820,84 @@
     "Eevee": {
         "1": [
             "Tackle",
-            "TailWhip"
+            "Tail Whip"
         ],
         "8": [
-            "SandAttack"
+            "Sand Attack"
         ],
         "16": [
             "Growl"
         ],
         "23": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "30": [
             "Bite"
         ],
         "36": [
-            "FocusEnergy"
+            "Focus Energy"
         ],
         "42": [
-            "TakeDown"
+            "Take Down"
         ]
     },
     "Vaporeon": {
         "1": [
-            "QuickAttack",
+            "Quick Attack",
             "Tackle",
-            "TailWhip",
-            "WaterGun"
+            "Tail Whip",
+            "Water Gun"
         ],
         "8": [
-            "SandAttack"
+            "Sand Attack"
         ],
         "16": [
-            "WaterGun"
+            "Water Gun"
         ],
         "23": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "30": [
             "Bite"
         ],
         "36": [
-            "AuroraBeam"
+            "Aurora Beam"
         ],
         "42": [
             "Haze",
             "Mist"
         ],
         "47": [
-            "AcidArmor"
+            "Acid Armor"
         ],
         "52": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Jolteon": {
         "1": [
-            "QuickAttack",
+            "Quick Attack",
             "Tackle",
-            "TailWhip",
-            "ThunderShock"
+            "Tail Whip",
+            "Thunder Shock"
         ],
         "8": [
-            "SandAttack"
+            "Sand Attack"
         ],
         "16": [
-            "ThunderShock"
+            "Thunder Shock"
         ],
         "23": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "30": [
-            "DoubleKick"
+            "Double Kick"
         ],
         "36": [
-            "PinMissile"
+            "Pin Missile"
         ],
         "42": [
-            "ThunderWave"
+            "Thunder Wave"
         ],
         "47": [
             "Agility"
@@ -2909,24 +2909,24 @@
     "Flareon": {
         "1": [
             "Ember",
-            "QuickAttack",
+            "Quick Attack",
             "Tackle",
-            "TailWhip"
+            "Tail Whip"
         ],
         "8": [
-            "SandAttack"
+            "Sand Attack"
         ],
         "16": [
             "Ember"
         ],
         "23": [
-            "QuickAttack"
+            "Quick Attack"
         ],
         "30": [
             "Bite"
         ],
         "36": [
-            "FireSpin"
+            "Fire Spin"
         ],
         "42": [
             "Smog"
@@ -2954,44 +2954,44 @@
             "Agility"
         ],
         "42": [
-            "TriAttack"
+            "Tri Attack"
         ]
     },
     "Omanyte": {
         "1": [
-            "WaterGun",
+            "Water Gun",
             "Withdraw"
         ],
         "34": [
-            "HornAttack"
+            "Horn Attack"
         ],
         "39": [
             "Leer"
         ],
         "46": [
-            "SpikeCannon"
+            "Spike Cannon"
         ],
         "53": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Omastar": {
         "1": [
-            "HornAttack",
-            "WaterGun",
+            "Horn Attack",
+            "Water Gun",
             "Withdraw"
         ],
         "34": [
-            "HornAttack"
+            "Horn Attack"
         ],
         "39": [
             "Leer"
         ],
         "44": [
-            "SpikeCannon"
+            "Spike Cannon"
         ],
         "49": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Kabuto": {
@@ -3009,7 +3009,7 @@
             "Leer"
         ],
         "49": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Kabutops": {
@@ -3028,13 +3028,13 @@
             "Leer"
         ],
         "53": [
-            "HydroPump"
+            "Hydro Pump"
         ]
     },
     "Aerodactyl": {
         "1": [
             "Agility",
-            "WingAttack"
+            "Wing Attack"
         ],
         "33": [
             "Supersonic"
@@ -3043,10 +3043,10 @@
             "Bite"
         ],
         "45": [
-            "TakeDown"
+            "Take Down"
         ],
         "54": [
-            "HyperBeam"
+            "Hyper Beam"
         ]
     },
     "Snorlax": {
@@ -3056,21 +3056,21 @@
             "Rest"
         ],
         "35": [
-            "BodySlam"
+            "Body Slam"
         ],
         "41": [
             "Harden"
         ],
         "48": [
-            "DoubleEdge"
+            "Double Edge"
         ],
         "56": [
-            "HyperBeam"
+            "Hyper Beam"
         ]
     },
     "Articuno": {
         "1": [
-            "IceBeam",
+            "Ice Beam",
             "Peck"
         ],
         "51": [
@@ -3085,8 +3085,8 @@
     },
     "Zapdos": {
         "1": [
-            "DrillPeck",
-            "ThunderShock"
+            "Drill Peck",
+            "Thunder Shock"
         ],
         "51": [
             "Thunder"
@@ -3095,12 +3095,12 @@
             "Agility"
         ],
         "60": [
-            "LightScreen"
+            "Light Screen"
         ]
     },
     "Moltres": {
         "1": [
-            "FireSpin",
+            "Fire Spin",
             "Peck"
         ],
         "51": [
@@ -3110,7 +3110,7 @@
             "Agility"
         ],
         "60": [
-            "SkyAttack"
+            "Sky Attack"
         ]
     },
     "Dratini": {
@@ -3119,7 +3119,7 @@
             "Wrap"
         ],
         "10": [
-            "ThunderWave"
+            "Thunder Wave"
         ],
         "20": [
             "Agility"
@@ -3128,20 +3128,20 @@
             "Slam"
         ],
         "40": [
-            "DragonRage"
+            "Dragon Rage"
         ],
         "50": [
-            "HyperBeam"
+            "Hyper Beam"
         ]
     },
     "Dragonair": {
         "1": [
             "Leer",
-            "ThunderWave",
+            "Thunder Wave",
             "Wrap"
         ],
         "10": [
-            "ThunderWave"
+            "Thunder Wave"
         ],
         "20": [
             "Agility"
@@ -3150,21 +3150,21 @@
             "Slam"
         ],
         "45": [
-            "DragonRage"
+            "Dragon Rage"
         ],
         "55": [
-            "HyperBeam"
+            "Hyper Beam"
         ]
     },
     "Dragonite": {
         "1": [
             "Agility",
             "Leer",
-            "ThunderWave",
+            "Thunder Wave",
             "Wrap"
         ],
         "10": [
-            "ThunderWave"
+            "Thunder Wave"
         ],
         "20": [
             "Agility"
@@ -3173,10 +3173,10 @@
             "Slam"
         ],
         "45": [
-            "DragonRage"
+            "Dragon Rage"
         ],
         "60": [
-            "HyperBeam"
+            "Hyper Beam"
         ]
     },
     "Mewtwo": {
@@ -3210,7 +3210,7 @@
             "Transform"
         ],
         "20": [
-            "MegaPunch"
+            "Mega Punch"
         ],
         "30": [
             "Metronome"

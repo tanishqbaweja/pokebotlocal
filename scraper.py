@@ -86,15 +86,16 @@ def get_moves_for_pokemon(pokemon_name: str):
             move_name_tag = cols[1].find("a", class_="ent-name")
 
             if level_str and move_name_tag:
-                move_name = move_name_tag.get_text(strip=True)
-                # Remove non-alphanumeric characters
-                move_name_cleaned = re.sub(r'[^A-Za-z0-9]', '', move_name)
+                # Derive the move name from the href for consistent formatting
+                move_href = move_name_tag['href']
+                move_slug = move_href.split('/')[-1]
+                move_name_formatted = move_slug.replace('-', ' ').title()
 
                 if level_str in moves:
-                    if move_name_cleaned not in moves[level_str]:
-                        moves[level_str].append(move_name_cleaned)
+                    if move_name_formatted not in moves[level_str]:
+                        moves[level_str].append(move_name_formatted)
                 else:
-                    moves[level_str] = [move_name_cleaned]
+                    moves[level_str] = [move_name_formatted]
 
     return moves
 
