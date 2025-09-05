@@ -4143,3 +4143,7 @@ Traceback (most recent call last):
   File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\app_commands\commands.py", line 877, in _do_call
     raise CommandInvokeError(self, e) from e
 discord.app_commands.errors.CommandInvokeError: Command 'spawn' raised an exception: Forbidden: 403 Forbidden (error code: 50001): Missing Access
+2025-09-05 09:59:50,756 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-05 09:59:50,757 - discord.client - INFO - logging in using static token
+2025-09-05 09:59:53,141 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 37cee2cae22288f47965cea3e77dab57).
+2025-09-05 10:03:53,694 - root - WARNING - Move 'Leech Seed' not found in MOVES_DATA
