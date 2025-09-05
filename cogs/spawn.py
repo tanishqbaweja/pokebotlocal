@@ -59,6 +59,10 @@ class Spawn(commands.Cog):
         
         # Check if spawn should trigger
         if new_count >= config['messages_until_spawn']:
+            # Clear old spawns for this guild
+            if message.guild.id in self.active_spawns:
+                self.active_spawns[message.guild.id].clear()
+            
             # Generate single Pokemon data for all channels
             spawn_data = await self._generate_pokemon_data()
             
