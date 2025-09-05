@@ -34,6 +34,23 @@ class Admin(commands.Cog):
             await interaction.response.send_message("Pokemon not found!", ephemeral=True)
             return
             
+        # Get spawn channels for this server
+        config = await self.bot.db.fetchrow(
+            "SELECT * FROM server_config WHERE guild_id = $1", interaction.guild.id
+        )
+        
+        if not config or not config['spawn_channels']:
+            await interaction.response.send_message("No spawn channels configured! Use /setspawn first.", ephemeral=True)
+            return
+            
+        # Parse spawn channels
+        all_channels = config.get('spawn_channels', [])
+        if -1 in all_channels:
+            separator_index = all_channels.index(-1)
+            spawn_channels = all_channels[separator_index + 1:]
+        else:
+            spawn_channels = all_channels
+            
         # Use the same spawn system
         spawn_cog = self.bot.get_cog('Spawn')
         if spawn_cog:
@@ -52,8 +69,22 @@ class Admin(commands.Cog):
                 rarity_bonus = {'common': 0, 'uncommon': 5, 'rare': 10, 'legendary': 15}
                 level = min(62, level + rarity_bonus[pokemon_data['rarity']])
             
-            await spawn_cog.spawn_pokemon_admin(interaction.channel, interaction.guild.id, species_id, level, shiny)
-            await interaction.response.send_message("Pokemon spawned!", ephemeral=True)
+            # Create spawn data
+            spawn_data = {
+                'species_id': species_id,
+                'level': level,
+                'is_shiny': shiny
+            }
+            
+            # Spawn in all configured spawn channels
+            spawned_count = 0
+            for channel_id in spawn_channels:
+                channel = interaction.guild.get_channel(channel_id)
+                if channel:
+                    await spawn_cog._spawn_pokemon(channel, interaction.guild.id, spawn_data)
+                    spawned_count += 1
+            
+            await interaction.response.send_message(f"Pokemon spawned in {spawned_count} channels!", ephemeral=True)
         
     @app_commands.command(name="givemoney", description="Give money to a user (Admin only)")
     async def give_money(self, interaction: discord.Interaction, user: discord.Member, amount: int):
