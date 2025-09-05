@@ -1441,7 +1441,10 @@ class BattleMoveView(discord.ui.View):
             battle_cog = self.bot.get_cog('Battle')
             result = await battle_cog.use_move(self.battle_data, self.user_id, move_name)
             
-            await interaction.response.send_message(result)
+            if result:
+                await interaction.response.send_message(result)
+            else:
+                await interaction.response.defer()
             
             # Check if battle still exists (may have ended during move execution)
             if self.user_id not in battle_cog.active_battles:

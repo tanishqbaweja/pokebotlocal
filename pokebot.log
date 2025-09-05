@@ -4171,3 +4171,20 @@ discord.app_commands.errors.CommandInvokeError: Command 'spawn' raised an except
 2025-09-05 11:39:33,365 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 415b13e6e07905eb5b18fe10bce5fb59).
 2025-09-05 11:39:35,367 - root - INFO - Professor Byte#9223 has connected to Discord!
 2025-09-05 11:39:36,196 - root - INFO - Slash commands synced!
+2025-09-05 11:45:37,168 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-05 11:45:37,169 - discord.client - INFO - logging in using static token
+2025-09-05 11:45:39,583 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 33bb535454d6d8511e04595e7b965f7a).
+2025-09-05 11:45:41,632 - root - INFO - Professor Byte#9223 has connected to Discord!
+2025-09-05 11:45:42,426 - root - INFO - Slash commands synced!
+2025-09-05 11:46:14,048 - discord.ui.view - ERROR - Ignoring exception in view <BattleMoveView timeout=180 children=3> for item <Button style=<ButtonStyle.secondary: 2> url=None disabled=False label='Strength' emoji=None row=None sku_id=None id=None>
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\ui\view.py", line 555, in _scheduled_task
+    await item.callback(interaction)
+  File "H:\Github Repositories\pokebot\cogs\battle.py", line 1444, in callback
+    await interaction.response.send_message(result)
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\interactions.py", line 1051, in send_message
+    response = await adapter.create_interaction_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\webhook\async_.py", line 226, in request
+    raise HTTPException(response, data)
+discord.errors.HTTPException: 400 Bad Request (error code: 50006): Cannot send an empty message
