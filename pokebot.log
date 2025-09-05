@@ -4260,3 +4260,8 @@ discord.app_commands.errors.CommandInvokeError: Command 'spawn' raised an except
 2025-09-05 14:39:03,521 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
 2025-09-05 14:39:03,523 - discord.client - INFO - logging in using static token
 2025-09-05 14:39:05,148 - root - ERROR - Failed to start bot: Extension 'cogs.move_validator_v2' could not be loaded or found.
+2025-09-05 14:39:58,816 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-05 14:39:58,817 - discord.client - INFO - logging in using static token
+2025-09-05 14:40:01,710 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 5fb4c732e24c0c6193ead3e198e8324d).
+2025-09-05 14:40:03,739 - root - INFO - Professor Byte#9223 has connected to Discord!
+2025-09-05 14:40:04,518 - root - INFO - Slash commands synced!
