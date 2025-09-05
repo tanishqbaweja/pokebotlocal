@@ -4257,3 +4257,6 @@ discord.app_commands.errors.CommandInvokeError: Command 'spawn' raised an except
 2025-09-05 14:28:38,699 - root - INFO - Slash commands synced!
 2025-09-05 14:30:22,298 - asyncio - ERROR - Resetting connection with an active transaction <asyncpg.connection.Connection object at 0x00000206C9C25120>
 2025-09-05 14:30:38,522 - asyncio - ERROR - Resetting connection with an active transaction <asyncpg.connection.Connection object at 0x00000206C9C25120>
+2025-09-05 14:39:03,521 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-05 14:39:03,523 - discord.client - INFO - logging in using static token
+2025-09-05 14:39:05,148 - root - ERROR - Failed to start bot: Extension 'cogs.move_validator_v2' could not be loaded or found.
