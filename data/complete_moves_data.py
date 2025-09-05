@@ -115,7 +115,7 @@ COMPLETE_MOVES_DATA = {
     'scratch': {'type': 'Normal', 'category': 'physical', 'power': 40, 'accuracy': 100, 'pp': 35},
     'screech': {'type': 'Normal', 'category': 'status', 'power': 0, 'accuracy': 85, 'pp': 40},
     'seismic_toss': {'type': 'Fighting', 'category': 'physical', 'power': 0, 'accuracy': 100, 'pp': 20},
-    'self_destruct': {'type': 'Normal', 'category': 'physical', 'power': 130, 'accuracy': 100, 'pp': 5},
+    'selfdestruct': {'type': 'Normal', 'category': 'physical', 'power': 130, 'accuracy': 100, 'pp': 5},
     'sharpen': {'type': 'Normal', 'category': 'status', 'power': 0, 'accuracy': 100, 'pp': 30},
     'sing': {'type': 'Normal', 'category': 'status', 'power': 0, 'accuracy': 55, 'pp': 15},
     'skull_bash': {'type': 'Normal', 'category': 'physical', 'power': 100, 'accuracy': 100, 'pp': 15},
@@ -232,7 +232,7 @@ TM_MOVES = {
     'tm21': 'mega_drain', 'tm22': 'solar_beam', 'tm23': 'dragon_rage', 'tm24': 'thunderbolt', 'tm25': 'thunder',
     'tm26': 'earthquake', 'tm27': 'fissure', 'tm28': 'dig', 'tm29': 'psychic', 'tm30': 'teleport',
     'tm31': 'mimic', 'tm32': 'double_team', 'tm33': 'reflect', 'tm34': 'bide', 'tm35': 'metronome',
-    'tm36': 'self_destruct', 'tm37': 'egg_bomb', 'tm38': 'fire_blast', 'tm39': 'swift', 'tm40': 'skull_bash',
+    'tm36': 'selfdestruct', 'tm37': 'egg_bomb', 'tm38': 'fire_blast', 'tm39': 'swift', 'tm40': 'skull_bash',
     'tm41': 'soft_boiled', 'tm42': 'dream_eater', 'tm43': 'sky_attack', 'tm44': 'rest', 'tm45': 'thunder_wave',
     'tm46': 'psywave', 'tm47': 'explosion', 'tm48': 'rock_slide', 'tm49': 'tri_attack', 'tm50': 'substitute'
 }
