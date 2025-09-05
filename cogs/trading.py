@@ -298,6 +298,12 @@ class SimpleTradeView(discord.ui.View):
                 self.requester_id, self.pokemon2_id
             )
             
+            # Reorder party positions for both users
+            pokemon_cog = self.bot.get_cog('Pokemon')
+            if pokemon_cog:
+                await pokemon_cog._reorder_party(self.requester_id)
+                await pokemon_cog._reorder_party(self.target_id)
+            
             # Check for trade evolution
             trading_cog = self.bot.get_cog('Trading')
             if trading_cog:
