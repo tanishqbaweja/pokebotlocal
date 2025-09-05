@@ -54,12 +54,14 @@ class PokemonBot(commands.Bot):
         await self.load_extension('cogs.pokedex')
         await self.load_extension('cogs.invite')
         await self.load_extension('cogs.move_learning')
+        await self.load_extension('cogs.move_validator_v2')
 
         
     async def on_ready(self):
-        print(f'{self.user} has connected to Discord!')
+        import logging
+        logging.info(f'{self.user} has connected to Discord!')
         await self.tree.sync()
-        print('Slash commands synced!')
+        logging.info('Slash commands synced!')
     
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.guild is None:
@@ -71,18 +73,19 @@ bot = PokemonBot()
 
 if __name__ == '__main__':
     token = os.getenv('DISCORD_TOKEN')
+    import logging
     if not token:
-        print("ERROR: DISCORD_TOKEN not found in environment variables. Please check your .env file.")
+        logging.error("DISCORD_TOKEN not found in environment variables. Please check your .env file.")
         exit(1)
         
     try:
         bot.run(token)
     except discord.LoginFailure:
-        print("ERROR: Invalid Discord token. Please check your .env file.")
+        logging.error("Invalid Discord token. Please check your .env file.")
         exit(1)
     except discord.HTTPException as e:
-        print(f"ERROR: Discord HTTP error: {e}")
+        logging.error(f"Discord HTTP error: {e}")
         exit(1)
     except Exception as e:
-        print(f"ERROR: Failed to start bot: {e}")
+        logging.error(f"Failed to start bot: {e}")
         exit(1)

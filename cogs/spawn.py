@@ -129,18 +129,22 @@ class Spawn(commands.Cog):
                     embed.set_image(url=f"attachment://{pokemon_data['name'].lower()}.png")
                     files.append(file)
         
-        spawn_message = await channel.send(embed=embed, files=files)
-        
-        # Store active spawn by channel
-        if guild_id not in self.active_spawns:
-            self.active_spawns[guild_id] = {}
-        self.active_spawns[guild_id][channel.id] = {
-            'species_id': species_id,
-            'level': level,
-            'is_shiny': is_shiny,
-            'channel_id': channel.id,
-            'message': spawn_message
-        }
+        try:
+            spawn_message = await channel.send(embed=embed, files=files)
+            
+            # Store active spawn by channel
+            if guild_id not in self.active_spawns:
+                self.active_spawns[guild_id] = {}
+            self.active_spawns[guild_id][channel.id] = {
+                'species_id': species_id,
+                'level': level,
+                'is_shiny': is_shiny,
+                'channel_id': channel.id,
+                'message': spawn_message
+            }
+        except (discord.HTTPException, discord.Forbidden) as e:
+            import logging
+            logging.error(f"Failed to send spawn message: {e}")
     
     async def spawn_pokemon_admin(self, channel, guild_id, species_id, level, is_shiny):
         """Admin spawn using same logic as normal spawn"""
@@ -318,12 +322,23 @@ class Spawn(commands.Cog):
     @app_commands.command(name="setspawn", description="Set spawn and message channels (Admin only)")
     @app_commands.describe(
         monitor1="First channel to monitor for messages", monitor2="Second monitor channel (optional)", monitor3="Third monitor channel (optional)",
-        spawn1="First channel where Pokemon spawn", spawn2="Second spawn channel (optional)", spawn3="Third spawn channel (optional)"
+        monitor4="Fourth monitor channel (optional)", monitor5="Fifth monitor channel (optional)", monitor6="Sixth monitor channel (optional)",
+        monitor7="Seventh monitor channel (optional)", monitor8="Eighth monitor channel (optional)", monitor9="Ninth monitor channel (optional)", monitor10="Tenth monitor channel (optional)",
+        spawn1="First channel where Pokemon spawn", spawn2="Second spawn channel (optional)", spawn3="Third spawn channel (optional)",
+        spawn4="Fourth spawn channel (optional)", spawn5="Fifth spawn channel (optional)", spawn6="Sixth spawn channel (optional)",
+        spawn7="Seventh spawn channel (optional)", spawn8="Eighth spawn channel (optional)", spawn9="Ninth spawn channel (optional)", spawn10="Tenth spawn channel (optional)"
     )
     async def setspawn(self, interaction: discord.Interaction, 
                       monitor1: discord.TextChannel, spawn1: discord.TextChannel,
                       monitor2: discord.TextChannel = None, spawn2: discord.TextChannel = None,
-                      monitor3: discord.TextChannel = None, spawn3: discord.TextChannel = None):
+                      monitor3: discord.TextChannel = None, spawn3: discord.TextChannel = None,
+                      monitor4: discord.TextChannel = None, spawn4: discord.TextChannel = None,
+                      monitor5: discord.TextChannel = None, spawn5: discord.TextChannel = None,
+                      monitor6: discord.TextChannel = None, spawn6: discord.TextChannel = None,
+                      monitor7: discord.TextChannel = None, spawn7: discord.TextChannel = None,
+                      monitor8: discord.TextChannel = None, spawn8: discord.TextChannel = None,
+                      monitor9: discord.TextChannel = None, spawn9: discord.TextChannel = None,
+                      monitor10: discord.TextChannel = None, spawn10: discord.TextChannel = None):
         if not (interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild or interaction.user.guild_permissions.moderate_members or interaction.user.id == 408190648924110858):
             await interaction.response.send_message("This command requires Administrator, Manage Server, or Moderate Members permissions!", ephemeral=True)
             return
@@ -331,14 +346,12 @@ class Spawn(commands.Cog):
         monitor_channels = [monitor1]
         spawn_channels = [spawn1]
         
-        if monitor2:
-            monitor_channels.append(monitor2)
-        if monitor3:
-            monitor_channels.append(monitor3)
-        if spawn2:
-            spawn_channels.append(spawn2)
-        if spawn3:
-            spawn_channels.append(spawn3)
+        for monitor in [monitor2, monitor3, monitor4, monitor5, monitor6, monitor7, monitor8, monitor9, monitor10]:
+            if monitor:
+                monitor_channels.append(monitor)
+        for spawn in [spawn2, spawn3, spawn4, spawn5, spawn6, spawn7, spawn8, spawn9, spawn10]:
+            if spawn:
+                spawn_channels.append(spawn)
             
         monitor_ids = [channel.id for channel in monitor_channels]
         spawn_ids = [channel.id for channel in spawn_channels]

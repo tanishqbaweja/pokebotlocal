@@ -220,18 +220,8 @@ class Shop(commands.Cog):
                 new_level, new_current_hp, pokemon['id']
             )
             
-            # Check for evolution
-            evolution_cog = self.bot.get_cog('Evolution')
-            if evolution_cog and 'evolves_at' in species and new_level >= species['evolves_at']:
-                # Update the pokemon dict for evolution check
-                pokemon['level'] = new_level
-                pokemon['current_hp'] = new_current_hp
-                await evolution_cog._evolve_pokemon(pokemon)
-                # Get updated species after potential evolution
-                updated_pokemon = await self.bot.db.fetchrow("SELECT * FROM pokemon WHERE id = $1", pokemon['id'])
-                if updated_pokemon and updated_pokemon['species_id'] != pokemon['species_id']:
-                    new_species = COMPLETE_POKEMON_DATA[updated_pokemon['species_id']]
-                    return f"{species['name']} grew to level {new_level} and evolved into {new_species['name']}!"
+            # Trigger level up events for move learning and evolution
+            self.bot.dispatch('pokemon_level_up', pokemon['id'], pokemon['level'], new_level)
             
             return f"{species['name']} grew to level {new_level}!"
         
@@ -365,44 +355,7 @@ class Shop(commands.Cog):
             species_name = species['name'] if species else 'Pokemon'
             return f"Cannot use {item.replace('_', ' ').title()} on {species_name}!"
             
-        # Rare candies (level up item)
-        elif item == "rare_candy":
-            if pokemon['level'] >= 100:
-                species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
-                species_name = species['name'] if species else 'Pokemon'
-                return f"{species_name} is already at maximum level!"
-                
-            new_level = pokemon['level'] + 1
-            
-            # Calculate new HP
-            species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
-            if species:
-                new_max_hp = ((species['base_hp'] + pokemon['hp_iv']) * 2 * new_level // 100) + new_level + 10
-                old_max_hp = ((species['base_hp'] + pokemon['hp_iv']) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
-                hp_increase = new_max_hp - old_max_hp
-                new_current_hp = pokemon['current_hp'] + hp_increase
-                
-                await self.bot.db.execute(
-                    "UPDATE pokemon SET level = $1, current_hp = $2 WHERE id = $3",
-                    new_level, new_current_hp, pokemon['id']
-                )
-                
-                # Trigger level up events
-                experience_cog = self.bot.get_cog('Experience')
-                if experience_cog:
-                    # Create a mutable pokemon dict for level up handling
-                    pokemon_dict = dict(pokemon)
-                    pokemon_dict['level'] = new_level
-                    pokemon_dict['current_hp'] = new_current_hp
-                    await experience_cog._handle_level_up(pokemon_dict, pokemon['level'], new_level)
-                    
-                    # Dispatch level up event for move learning and evolution
-                    self.bot.dispatch('pokemon_level_up', pokemon['id'], pokemon['level'], new_level)
-                
-                species_name = species['name']
-                return f"{species_name} grew to level {new_level}!"
-            
-            return "Error calculating stats for Pokemon!"
+        # Remove duplicate rare_candy handling - already handled above
             
         return None
     

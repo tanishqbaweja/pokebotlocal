@@ -253,8 +253,9 @@ class SimpleTradeView(discord.ui.View):
         if self.message:
             try:
                 await self.message.edit(embed=embed, view=self)
-            except:
-                pass
+            except (discord.HTTPException, discord.NotFound, discord.Forbidden) as e:
+                import logging
+                logging.warning(f"Failed to edit message after timeout: {e}")
         
     @discord.ui.button(label="Accept Trade", style=discord.ButtonStyle.green)
     async def accept_trade(self, interaction: discord.Interaction, button: discord.ui.Button):

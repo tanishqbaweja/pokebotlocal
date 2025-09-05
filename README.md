@@ -92,8 +92,7 @@ Download and install Python from [python.org](https://www.python.org/downloads/)
    psql -d pokebot -U pokebotuser -f database/schema.sql
    
    # Initialize Pokemon data
-   psql -d pokebot -U pokebotuser -f database/init_data.sql
-   psql -d pokebot -U pokebotuser -f database/complete_species.sql
+   psql -d pokebot -U pokebotuser -f database/complete_init_data.sql
    ```
 
 5. **Run the Bot**

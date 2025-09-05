@@ -308,7 +308,41 @@ class MoveLearning(commands.Cog):
             'kinesis': 'kinesis',
             'amnesia': 'amnesia',
             'agility': 'agility',
-            'whirlwind': 'whirlwind'
+            'whirlwind': 'whirlwind',
+            
+            # Multi-hit moves
+            'doubleslap': 'double_slap',
+            'cometpunch': 'comet_punch',
+            'furyattack': 'fury_attack',
+            'pinmissile': 'pin_missile',
+            'spikecannon': 'spike_cannon',
+            'furyswipes': 'fury_swipes',
+            
+            # Recoil moves
+            'takedown': 'take_down',
+            'doubleedge': 'double_edge',
+            'jumpkick': 'jump_kick',
+            'hijumpkick': 'high_jump_kick',
+            
+            # OHKO moves
+            'guillotine': 'guillotine',
+            'horndrill': 'horn_drill',
+            
+            # Self-destruct moves
+            'selfdestruct': 'self_destruct',
+            
+            # Two-turn moves
+            'skullbash': 'skull_bash',
+            'skyattack': 'sky_attack',
+            'razorwind': 'razor_wind',
+            'solarbeam': 'solar_beam',
+            
+            # Additional common moves
+            'bide': 'bide',
+            'bind': 'bind',
+            'clamp': 'clamp',
+            'wrap': 'wrap',
+            'firespin': 'fire_spin'
         }
         
         return special_conversions.get(converted, converted)

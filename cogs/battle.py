@@ -247,7 +247,7 @@ class Battle(commands.Cog):
             attacker_data['pokemon'] = dict(attacker_data['pokemon'])
             attacker_data['pokemon']['last_move_used'] = move_name
             
-            # Check if status move caused fainting (like Selfdestruct used as status)
+            # Check if status move caused fainting (like Selfdestruct/Explosion)
             if defender_data['pokemon']['current_hp'] <= 0:
                 result_text += f"\n{defender_data['pokemon']['name']} fainted!"
                 
@@ -259,6 +259,16 @@ class Battle(commands.Cog):
                         if experience_cog:
                             await experience_cog._add_experience(attacker_data['pokemon'], exp_gained)
                             result_text += f"\n{attacker_data['pokemon']['name']} gained {exp_gained} experience!"
+            
+            # Handle self-fainting moves (Selfdestruct, Explosion)
+            if move_name in ['selfdestruct', 'explosion'] and attacker_data['pokemon']['current_hp'] > 0:
+                attacker_data['pokemon']['current_hp'] = 0
+                if attacker_data['pokemon']['id'] > 0:  # Only update database for real Pokemon
+                    await self.bot.db.execute(
+                        "UPDATE pokemon SET current_hp = 0 WHERE id = $1",
+                        attacker_data['pokemon']['id']
+                    )
+                result_text += f"\n{attacker_data['pokemon']['name']} fainted from the explosion!"
         else:
             # Calculate damage for attacking moves
             damage = self._calculate_damage(attacker_data, defender_data, move_name)
@@ -482,6 +492,8 @@ class Battle(commands.Cog):
         elif move_name in ['poison_powder', 'poison_gas', 'toxic']:
             if defender_data.get('status') is None:
                 defender_data['status'] = 'poison'
+                if move_name == 'toxic':
+                    defender_data['toxic_counter'] = 1  # Toxic gets worse each turn
                 return f"{defender['name']} was poisoned!"
             return f"{defender['name']} is already affected by a status condition!"
             
@@ -621,6 +633,19 @@ class Battle(commands.Cog):
                 )
             return f"{defender['name']} took {damage} damage from Psywave!"
             
+        # Self-destructing moves
+        elif move_name in ['selfdestruct', 'explosion']:
+            # Calculate damage to opponent first
+            base_power = 200 if move_name == 'selfdestruct' else 250
+            damage = self._calculate_explosion_damage(attacker_data, defender_data, base_power)
+            defender['current_hp'] = max(0, defender['current_hp'] - damage)
+            if defender['id'] > 0:
+                await self.bot.db.execute(
+                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                    defender['current_hp'], defender['id']
+                )
+            return f"{defender['name']} took {damage} damage from {move_name.replace('_', ' ').title()}!"
+            
         # Other status moves
         elif move_name in ['double_team', 'minimize']:
             if attacker_data['stats']['evasion'] < 6:
@@ -685,6 +710,24 @@ class Battle(commands.Cog):
                     return f"{attacker['name']} changed type to {move_data['type']}!"
             return f"{attacker['name']} used Conversion, but nothing happened!"
             
+        # OHKO moves
+        elif move_name in ['fissure', 'guillotine', 'horn_drill']:
+            # OHKO moves only work if user level >= target level
+            if attacker['level'] >= defender['level']:
+                accuracy = 30 + attacker['level'] - defender['level']
+                if random.randint(1, 100) <= accuracy:
+                    defender['current_hp'] = 0
+                    if defender['id'] > 0:
+                        await self.bot.db.execute(
+                            "UPDATE pokemon SET current_hp = 0 WHERE id = $1",
+                            defender['id']
+                        )
+                    return f"{defender['name']} was knocked out by a one-hit KO!"
+                else:
+                    return f"{move_name.replace('_', ' ').title()} missed!"
+            else:
+                return f"{move_name.replace('_', ' ').title()} failed! The target is too high level!"
+            
         elif move_name == 'mimic':
             # Copy opponent's last used move (simplified)
             if defender.get('last_move_used'):
@@ -692,6 +735,48 @@ class Battle(commands.Cog):
                 return f"{attacker['name']} learned {defender['last_move_used'].replace('_', ' ').title()}!"
             return f"{attacker['name']} used Mimic, but there was no move to copy!"
             
+        # Multi-hit moves (handled as status for turn management)
+        elif move_name in ['double_slap', 'comet_punch', 'fury_attack', 'pin_missile', 'spike_cannon', 'barrage', 'fury_swipes']:
+            hits = random.choices([2, 3, 4, 5], weights=[37.5, 37.5, 12.5, 12.5])[0]
+            total_damage = 0
+            for _ in range(hits):
+                hit_damage = self._calculate_damage(attacker_data, defender_data, move_name)
+                total_damage += hit_damage
+                defender['current_hp'] = max(0, defender['current_hp'] - hit_damage)
+                if defender['current_hp'] <= 0:
+                    break
+            
+            if defender['id'] > 0:
+                await self.bot.db.execute(
+                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                    defender['current_hp'], defender['id']
+                )
+            return f"{attacker['name']} hit {hits} times for {total_damage} total damage!"
+            
+        # Recoil moves
+        elif move_name in ['take_down', 'double_edge', 'submission', 'jump_kick', 'high_jump_kick']:
+            damage = self._calculate_damage(attacker_data, defender_data, move_name)
+            defender['current_hp'] = max(0, defender['current_hp'] - damage)
+            
+            # Calculate recoil
+            recoil_percent = {'take_down': 0.25, 'double_edge': 0.33, 'submission': 0.25, 'jump_kick': 0.5, 'high_jump_kick': 0.5}
+            recoil = max(1, int(damage * recoil_percent.get(move_name, 0.25)))
+            attacker['current_hp'] = max(0, attacker['current_hp'] - recoil)
+            
+            # Update database
+            if defender['id'] > 0:
+                await self.bot.db.execute(
+                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                    defender['current_hp'], defender['id']
+                )
+            if attacker['id'] > 0:
+                await self.bot.db.execute(
+                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                    attacker['current_hp'], attacker['id']
+                )
+            
+            return f"{defender['name']} took {damage} damage! {attacker['name']} took {recoil} recoil damage!"
+        
         return "The move had no effect!"
         
     def _get_type_effectiveness(self, move, defender_pokemon):
@@ -707,6 +792,35 @@ class Battle(commands.Cog):
                 
         return effectiveness
 
+    def _calculate_explosion_damage(self, attacker_data, defender_data, base_power):
+        """Calculate damage for explosion moves with halved defense"""
+        attacker = attacker_data['pokemon']
+        defender = defender_data['pokemon']
+        
+        attacker_species = POKEMON_DATA[attacker['species_id']]
+        defender_species = POKEMON_DATA[defender['species_id']]
+        
+        # Calculate stats
+        attack_stat = self._calculate_stat(attacker_species['base_attack'], attacker['attack_iv'], attacker['level'])
+        defense_stat = self._calculate_stat(defender_species['base_defense'], defender['defense_iv'], defender['level']) // 2  # Halved for explosion
+        
+        # Apply stat stages
+        attack_stat = self._apply_stat_stage(attack_stat, attacker_data['stats']['attack'])
+        defense_stat = self._apply_stat_stage(defense_stat, defender_data['stats']['defense'])
+        
+        # Base damage calculation
+        damage = ((2 * attacker['level'] + 10) / 250) * (attack_stat / defense_stat) * base_power + 2
+        
+        # Type effectiveness and STAB
+        effectiveness = self._get_type_effectiveness({'type': 'Normal'}, defender)
+        if attacker_species['type1'].lower() == 'normal' or (attacker_species.get('type2') and attacker_species['type2'].lower() == 'normal'):
+            effectiveness *= 1.5
+        
+        # Random factor
+        random_factor = random.randint(85, 100) / 100
+        
+        return int(damage * effectiveness * random_factor)
+    
     def _calculate_damage(self, attacker_data, defender_data, move_name):
         if move_name not in MOVES_DATA:
             return 0
@@ -714,7 +828,7 @@ class Battle(commands.Cog):
         move = MOVES_DATA[move_name]
         
         # Handle special damage moves
-        if move_name in ['sonic_boom', 'dragon_rage', 'night_shade', 'seismic_toss', 'super_fang', 'psywave']:
+        if move_name in ['sonic_boom', 'dragon_rage', 'night_shade', 'seismic_toss', 'super_fang', 'psywave', 'selfdestruct', 'explosion', 'fissure', 'guillotine', 'horn_drill']:
             return 0  # These are handled in status move function
             
         if move['power'] == 0:  # Status moves don't deal damage
@@ -930,17 +1044,12 @@ class Battle(commands.Cog):
         
     def _choose_strategic_move(self, npc_data, battle_data, valid_moves):
         """Enhanced strategic AI for NPC move selection - Use enhanced AI module"""
-        # Try to use enhanced NPC AI v2 if available
+        # Use enhanced NPC AI v3
         try:
-            from cogs.enhanced_npc_ai_v2 import choose_npc_move_enhanced
+            from cogs.enhanced_npc_ai_v3 import choose_npc_move_enhanced
             return choose_npc_move_enhanced(battle_data, npc_data, valid_moves)
         except ImportError:
-            # Try original enhanced AI
-            try:
-                from cogs.enhanced_npc_ai import choose_npc_move_enhanced
-                return choose_npc_move_enhanced(battle_data, npc_data, valid_moves)
-            except ImportError:
-                pass  # Fall back to built-in AI
+            pass  # Fall back to built-in AI
             
         player_data = battle_data['challenger'] if battle_data['challenger']['id'] > 0 else battle_data['opponent']
         player_pokemon = player_data['pokemon']
