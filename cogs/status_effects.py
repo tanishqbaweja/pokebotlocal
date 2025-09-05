@@ -13,15 +13,25 @@ class StatusEffects(commands.Cog):
         status = pokemon_data.get('status')
         result_messages = []
         
+        # Don't apply status effects to fainted Pokemon
+        if pokemon['current_hp'] <= 0:
+            return None
+        
         if status == 'burn':
             damage = max(1, pokemon['current_hp'] // 16)
             pokemon['current_hp'] = max(0, pokemon['current_hp'] - damage)
             result_messages.append(f"{pokemon['name']} is hurt by burn! ({damage} damage)")
             
         elif status == 'poison':
-            damage = max(1, pokemon['current_hp'] // 8)
+            # Handle toxic poison (gets worse each turn)
+            if pokemon_data.get('toxic_counter'):
+                damage = max(1, (pokemon['current_hp'] * pokemon_data['toxic_counter']) // 16)
+                pokemon_data['toxic_counter'] += 1
+                result_messages.append(f"{pokemon['name']} is hurt by toxic poison! ({damage} damage)")
+            else:
+                damage = max(1, pokemon['current_hp'] // 8)
+                result_messages.append(f"{pokemon['name']} is hurt by poison! ({damage} damage)")
             pokemon['current_hp'] = max(0, pokemon['current_hp'] - damage)
-            result_messages.append(f"{pokemon['name']} is hurt by poison! ({damage} damage)")
             
         elif status == 'sleep':
             pokemon_data['status_turns'] -= 1
@@ -58,25 +68,31 @@ class StatusEffects(commands.Cog):
         
     def can_use_move(self, pokemon_data):
         """Check if Pokemon can use a move based on status"""
+        pokemon = pokemon_data.get('pokemon', {})
+        pokemon_name = pokemon.get('name', 'Pokemon')
         status = pokemon_data.get('status')
         
         if status == 'freeze':
             if random.randint(1, 5) == 1:  # 20% chance to thaw
                 pokemon_data['status'] = None
-                return True, f"{pokemon_data['pokemon']['name']} thawed out!"
-            return False, f"{pokemon_data['pokemon']['name']} is frozen solid!"
+                return True, f"{pokemon_name} thawed out!"
+            return False, f"{pokemon_name} is frozen solid!"
             
         elif status == 'paralysis':
             if random.randint(1, 4) == 1:  # 25% chance to be fully paralyzed
-                return False, f"{pokemon_data['pokemon']['name']} is paralyzed and can't move!"
+                return False, f"{pokemon_name} is paralyzed and can't move!"
             return True, None
             
         elif status == 'sleep':
-            return False, f"{pokemon_data['pokemon']['name']} is fast asleep!"
+            return False, f"{pokemon_name} is fast asleep!"
             
         # Check confusion
-        if pokemon_data.get('confused') and random.randint(1, 2) == 1:
-            return False, f"{pokemon_data['pokemon']['name']} is confused!"
+        if pokemon_data.get('confused'):
+            if random.randint(1, 2) == 1:  # 50% chance to hurt self
+                # Calculate confusion damage
+                damage = pokemon['current_hp'] // 8
+                pokemon['current_hp'] = max(0, pokemon['current_hp'] - damage)
+                return False, f"{pokemon_name} hurt itself in confusion! ({damage} damage)"
             
         return True, None
         
