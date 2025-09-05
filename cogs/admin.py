@@ -34,13 +34,15 @@ class Admin(commands.Cog):
             await interaction.response.send_message("Pokemon not found!", ephemeral=True)
             return
             
+        await interaction.response.defer(ephemeral=True)
+        
         # Get spawn channels for this server
         config = await self.bot.db.fetchrow(
             "SELECT * FROM server_config WHERE guild_id = $1", interaction.guild.id
         )
         
         if not config or not config['spawn_channels']:
-            await interaction.response.send_message("No spawn channels configured! Use /setspawn first.", ephemeral=True)
+            await interaction.followup.send("No spawn channels configured! Use /setspawn first.", ephemeral=True)
             return
             
         # Parse spawn channels
@@ -84,7 +86,7 @@ class Admin(commands.Cog):
                     await spawn_cog._spawn_pokemon(channel, interaction.guild.id, spawn_data)
                     spawned_count += 1
             
-            await interaction.response.send_message(f"Pokemon spawned in {spawned_count} channels!", ephemeral=True)
+            await interaction.followup.send(f"Pokemon spawned in {spawned_count} channels!", ephemeral=True)
         
     @app_commands.command(name="givemoney", description="Give money to a user (Admin only)")
     async def give_money(self, interaction: discord.Interaction, user: discord.Member, amount: int):
