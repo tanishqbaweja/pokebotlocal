@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict RG31hjYYsZ8bpz2zlXpgw3ywWeG5Jks6lpluAeOtGiJ3GGdv1HcOipUY68Qf7OY
+\restrict 8gHwVBsPlkcyoiGcm9zSvRbETiuG6nJx8wDK6qu9BEWeZjwQHqIJxlos3HkKGKo
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -63,6 +63,20 @@ ALTER SEQUENCE public.battles_id_seq OWNER TO postgres;
 
 ALTER SEQUENCE public.battles_id_seq OWNED BY public.battles.id;
 
+
+--
+-- Name: npc_completions; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.npc_completions (
+    user_id bigint NOT NULL,
+    npc_type integer NOT NULL,
+    npc_index integer NOT NULL,
+    completed_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.npc_completions OWNER TO postgres;
 
 --
 -- Name: pokemon; Type: TABLE; Schema: public; Owner: postgres
@@ -252,6 +266,25 @@ COPY public.battles (id, challenger_id, opponent_id, challenger_pokemon, opponen
 8	408190648924110858	137795731951058944	49	53	408190648924110858	{}	active	2025-08-31 12:27:04.389835
 9	408190648924110858	137795731951058944	49	53	408190648924110858	{}	completed	2025-08-31 12:31:07.79503
 12	408190648924110858	741060754660130899	49	26	408190648924110858	{}	completed	2025-08-31 14:52:28.268935
+28	408190648924110858	741060754660130899	49	26	408190648924110858	{}	active	2025-09-01 14:04:41.484384
+29	408190648924110858	741060754660130899	49	26	408190648924110858	{}	completed	2025-09-01 16:25:29.211448
+30	408190648924110858	741060754660130899	5	27	408190648924110858	{}	completed	2025-09-01 16:30:36.194499
+31	741060754660130899	408190648924110858	26	5	741060754660130899	{}	completed	2025-09-01 16:32:49.457761
+32	408190648924110858	741060754660130899	5	27	408190648924110858	{}	active	2025-09-02 01:18:32.834272
+33	408190648924110858	741060754660130899	49	26	408190648924110858	{}	completed	2025-09-02 01:38:32.016418
+34	408190648924110858	741060754660130899	5	26	408190648924110858	{}	active	2025-09-02 06:36:43.942399
+35	408190648924110858	741060754660130899	5	27	408190648924110858	{}	completed	2025-09-02 06:59:47.005158
+36	408190648924110858	741060754660130899	5	26	408190648924110858	{}	active	2025-09-02 07:10:57.527807
+37	408190648924110858	741060754660130899	5	27	408190648924110858	{}	active	2025-09-02 07:36:59.884813
+\.
+
+
+--
+-- Data for Name: npc_completions; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.npc_completions (user_id, npc_type, npc_index, completed_at) FROM stdin;
+408190648924110858	1	0	2025-09-01 13:28:26.27202
 \.
 
 
@@ -261,7 +294,7 @@ COPY public.battles (id, challenger_id, opponent_id, challenger_pokemon, opponen
 
 COPY public.pokemon (id, owner_id, species_id, level, experience, hp_iv, attack_iv, defense_iv, special_iv, speed_iv, current_hp, is_shiny, in_party, party_position, move1, move2, move3, move4, status_condition, caught_at) FROM stdin;
 52	137795731951058944	127	20	7508	2	7	10	13	6	0	f	f	\N	vice_grip	focus_energy	string_shot	tackle	\N	2025-08-31 11:04:57.320561
-49	408190648924110858	151	34	35224	2	11	7	8	15	0	f	t	1	confusion	dream_eater	psybeam	psychic	\N	2025-08-31 09:13:52.769308
+49	408190648924110858	151	38	38723	2	11	7	8	15	0	f	t	1	confusion	dream_eater	psybeam	psychic	\N	2025-08-31 09:13:52.769308
 32	408190648924110858	79	23	0	13	11	9	12	1	80	f	f	\N	curse	yawn	water_gun	confusion	\N	2025-08-30 17:26:43.258464
 38	1008209186913529857	7	6	1813	8	7	10	9	13	22	f	t	1	tackle	tail_whip	\N	\N	\N	2025-08-31 04:30:23.586145
 28	408190648924110858	150	100	0	10	6	11	10	13	342	t	f	\N	confusion	teleport	\N	\N	\N	2025-08-30 15:19:08.688372
@@ -269,30 +302,32 @@ COPY public.pokemon (id, owner_id, species_id, level, experience, hp_iv, attack_
 12	272439835694727170	1	5	125	2	11	12	13	14	19	f	f	\N	tackle	growl	\N	\N	\N	2025-08-29 04:11:07.073452
 30	408190648924110858	65	40	109	12	15	15	8	1	0	f	f	\N	confusion	teleport	psybeam	psychic	\N	2025-08-30 15:31:58.527273
 51	408190648924110858	124	21	0	8	1	6	0	8	61	f	f	\N	pound	lick	double_slap	tackle	\N	2025-08-31 09:51:43.995727
-37	137795731951058944	8	22	8058	0	3	10	9	11	72	f	t	2	tackle	tail_whip	surf	Bubble	\N	2025-08-31 04:30:14.084599
+5	408190648924110858	150	100	1361	11	9	9	3	9	0	t	t	2	tackle	razor_wind	\N	\N	\N	2025-08-28 17:00:20.093489
+53	137795731951058944	94	36	7430	9	2	14	4	13	84	t	t	1	lick	confuse_ray	night_shade	psychic	\N	2025-08-31 11:13:06.907257
 40	1008209186913529857	110	20	1620	2	6	8	12	10	27	f	t	2	poison_sting	tackle	acid	sludge	\N	2025-08-31 04:37:09.362368
 29	408190648924110858	65	36	0	7	15	8	5	15	90	f	f	\N	confusion	teleport	\N	\N	\N	2025-08-30 15:27:24.447579
-54	774175076366024715	7	10	4732	10	6	4	12	1	30	f	t	1	tackle	tail_whip	Bubble	\N	\N	2025-08-31 11:17:30.184665
+54	774175076366024715	8	19	4878	10	6	4	12	1	74	f	t	1	tackle	tail_whip	Bubble	water_gun	\N	2025-08-31 11:17:30.184665
 14	272439835694727170	101	28	34	6	10	10	3	0	74	f	f	\N	thundershock	tackle	\N	\N	\N	2025-08-29 04:14:53.149349
 45	1145424000953090130	7	5	661	11	4	11	6	12	20	f	t	1	tackle	tail_whip	\N	\N	\N	2025-08-31 09:11:03.850522
 7	408190648924110858	62	28	3	10	9	8	7	14	94	f	f	\N	tackle	\N	\N	\N	\N	2025-08-28 17:10:20.559195
-27	741060754660130899	150	100	0	14	7	3	2	3	339	t	t	2	confusion	teleport	\N	\N	\N	2025-08-30 15:18:34.735917
+26	741060754660130899	2	21	6724	1	4	1	4	5	27	f	t	1	tackle	growl	Leech Seed	vine_whip	\N	2025-08-30 15:05:38.088756
 11	408190648924110858	64	80	3	8	13	15	9	8	166	f	f	\N	confusion	teleport	\N	\N	\N	2025-08-28 18:23:35.120455
 43	408190648924110858	97	100	19399	15	10	2	7	2	310	f	f	\N	confusion	teleport	psybeam	psychic	\N	2025-08-31 07:10:00.882665
 13	272439835694727170	41	16	69	1	14	10	3	12	39	f	f	\N	leech_life	supersonic	bite	confuse_ray	\N	2025-08-29 04:12:40.586292
 34	408190648924110858	151	39	0	4	5	11	0	6	130	f	f	\N	confusion	teleport	psybeam	psychic	\N	2025-08-30 17:54:03.267218
 35	408190648924110858	150	24	0	0	8	15	1	11	84	f	f	\N	confusion	teleport	psybeam	psychic	\N	2025-08-30 17:54:11.911374
-26	741060754660130899	2	20	6338	1	4	1	4	5	0	f	t	1	tackle	growl	Leech Seed	vine_whip	\N	2025-08-30 15:05:38.088756
+23	408190648924110858	150	96	51765	8	2	9	0	0	295	f	t	5	confusion	teleport	Barrier	Psychic	\N	2025-08-29 11:49:27.697522
 39	137795731951058944	119	16	2874	3	4	1	7	4	52	f	f	\N	tackle	bubble	surf	\N	\N	2025-08-31 04:31:23.911644
-4	408190648924110858	150	99	49243	5	7	9	13	12	66	f	t	3	tackle	strength	\N	\N	\N	2025-08-28 16:58:13.932254
-61	774175076366024715	12	29	4334	7	10	15	5	2	77	f	t	2	string_shot	tackle	leech_life	pin_missile	\N	2025-08-31 12:18:07.55529
+33	408190648924110858	132	100	13911	7	14	9	14	0	0	f	t	4	transform	tackle	growl	quick_attack	\N	2025-08-30 17:27:07.05236
+58	408190648924110858	12	26	17634	6	9	11	9	8	70	f	t	6	string_shot	harden	Confusion	PoisonPowder	\N	2025-08-31 12:07:51.424743
+4	408190648924110858	150	99	52062	5	7	9	13	12	325	f	t	3	tackle	strength	\N	\N	\N	2025-08-28 16:58:13.932254
 21	272439835694727170	129	7	0	15	11	8	10	10	21	f	f	\N	splash	\N	\N	\N	\N	2025-08-29 04:29:14.599188
 22	272439835694727170	129	7	0	9	4	7	13	10	21	f	f	\N	splash	\N	\N	\N	\N	2025-08-29 04:29:16.292559
 41	369809123925295104	20	21	10505	11	0	15	7	3	58	f	t	2	tackle	growl	quick_attack	body_slam	\N	2025-08-31 05:34:31.667141
-5	408190648924110858	150	100	1211	11	9	9	3	9	0	t	t	2	tackle	razor_wind	\N	\N	\N	2025-08-28 17:00:20.093489
+71	137795731951058944	69	22	244	2	8	7	13	2	54	f	t	6	wrap	sleep_powder	poison_powder	stun_spore	\N	2025-08-31 19:04:15.714772
 9	408190648924110858	150	80	400	14	5	9	1	8	282	t	f	\N	tackle	\N	\N	\N	\N	2025-08-28 18:18:22.387695
 31	408190648924110858	58	12	0	1	4	13	8	9	35	f	f	\N	bite	roar	\N	\N	\N	2025-08-30 17:26:29.775578
-53	137795731951058944	94	36	7268	9	2	14	4	13	84	t	t	1	lick	confuse_ray	night_shade	psychic	\N	2025-08-31 11:13:06.907257
+37	137795731951058944	8	22	8220	0	3	10	9	11	72	f	t	2	tackle	tail_whip	surf	Bubble	\N	2025-08-31 04:30:14.084599
 44	408190648924110858	29	14	0	5	6	3	6	1	40	f	f	\N	scratch	double_kick	\N	\N	\N	2025-08-31 09:01:23.241337
 36	369809123925295104	5	16	10697	9	8	7	2	4	47	f	t	1	scratch	growl	Ember	Leer	\N	2025-08-31 04:25:36.857546
 46	1145424000953090130	39	20	661	11	3	5	8	14	80	f	t	2	pound	disable	defense_curl	double_slap	\N	2025-08-31 09:11:17.757315
@@ -305,20 +340,19 @@ COPY public.pokemon (id, owner_id, species_id, level, experience, hp_iv, attack_
 20	272439835694727170	133	99	83	10	7	0	14	10	237	t	t	4	quick_attack	bite	focus_energy	take_down	\N	2025-08-29 04:17:04.130122
 19	272439835694727170	133	99	83	6	9	3	2	11	229	t	t	5	quick_attack	bite	focus_energy	take_down	\N	2025-08-29 04:16:56.209642
 18	272439835694727170	133	99	83	2	4	13	15	0	221	t	t	6	quick_attack	bite	focus_energy	take_down	\N	2025-08-29 04:16:53.450919
-71	137795731951058944	69	22	82	2	8	7	13	2	54	f	t	6	wrap	sleep_powder	poison_powder	stun_spore	\N	2025-08-31 19:04:15.714772
+27	741060754660130899	150	100	100	14	7	3	2	3	350	t	t	2	confusion	teleport	\N	\N	\N	2025-08-30 15:18:34.735917
 60	137795731951058944	57	29	0	1	8	9	2	4	77	f	f	\N	karate_chop	leer	seismic_toss	submission	\N	2025-08-31 12:09:40.032885
-23	408190648924110858	150	96	48967	8	2	9	0	0	324	f	t	5	confusion	teleport	Barrier	Psychic	\N	2025-08-29 11:49:27.697522
-58	408190648924110858	12	24	14836	6	9	11	9	8	65	f	t	6	string_shot	harden	Confusion	PoisonPowder	\N	2025-08-31 12:07:51.424743
+61	774175076366024715	12	29	4480	7	10	15	5	2	77	f	t	2	string_shot	tackle	leech_life	pin_missile	\N	2025-08-31 12:18:07.55529
 56	137795731951058944	96	13	0	5	0	7	6	8	39	f	f	\N	hypnosis	disable	\N	\N	\N	2025-08-31 11:49:38.072595
 48	408190648924110858	150	20	0	2	10	4	11	7	73	f	f	\N	confusion	teleport	psybeam	psychic	\N	2025-08-31 09:11:41.567484
 6	408190648924110858	151	100	513	8	4	14	10	3	326	t	f	\N	tackle	\N	\N	\N	\N	2025-08-28 17:09:26.224504
-33	408190648924110858	132	100	13911	7	14	9	14	0	220	f	t	4	transform	tackle	growl	quick_attack	\N	2025-08-30 17:27:07.05236
 42	137795731951058944	54	17	4963	6	10	15	10	10	46	f	f	\N	scratch	tail_whip	water_gun	surf	\N	2025-08-31 06:22:39.520207
 50	408190648924110858	12	19	12358	4	7	5	5	12	53	f	f	\N	tackle	string_shot	Confusion	PoisonPowder	\N	2025-08-31 09:29:21.692888
 47	137795731951058944	39	20	4019	0	6	1	10	5	76	f	f	\N	pound	disable	defense_curl	double_slap	\N	2025-08-31 09:11:17.799097
+83	408190648924110858	146	40	0	9	3	13	4	12	129	t	f	\N	fire_spin	peck	ember	tackle	\N	2025-09-05 10:10:07.133865
 75	137795731951058944	104	18	0	11	1	9	8	1	49	f	f	\N	tail_whip	bone_club	headbutt	\N	\N	2025-08-31 21:45:49.703859
-76	774175076366024715	74	10	723	7	2	0	8	4	29	f	t	3	tackle	defense_curl	\N	\N	\N	2025-08-31 23:43:41.439913
-77	774175076366024715	144	40	303	14	7	8	1	13	133	f	t	4	tackle	leer	ice_beam	blizzard	\N	2025-09-01 00:49:05.361194
+76	774175076366024715	74	11	869	7	2	0	8	4	31	f	t	3	tackle	defense_curl	\N	\N	\N	2025-08-31 23:43:41.439913
+77	774175076366024715	144	40	449	14	7	8	1	13	133	f	t	4	tackle	leer	ice_beam	blizzard	\N	2025-09-01 00:49:05.361194
 64	137795731951058944	59	28	0	5	14	6	3	15	91	f	f	\N	ember	tackle	leer	flamethrower	\N	2025-08-31 12:54:13.782747
 69	137795731951058944	139	23	2133	2	1	15	9	4	66	f	f	\N	rock_throw	tackle	harden	rock_slide	\N	2025-08-31 17:25:15.5681
 65	1008209186913529857	59	28	1671	3	15	7	15	10	90	f	t	3	ember	tackle	leer	flamethrower	\N	2025-08-31 13:08:23.407313
@@ -327,12 +361,15 @@ COPY public.pokemon (id, owner_id, species_id, level, experience, hp_iv, attack_
 78	408190648924110858	145	37	0	13	15	9	2	13	123	f	f	\N	thundershock	tackle	thunder_wave	thunderbolt	\N	2025-09-01 03:08:16.392987
 79	408190648924110858	139	23	0	3	15	4	13	13	66	f	f	\N	rock_throw	tackle	harden	rock_slide	\N	2025-09-01 03:11:02.166416
 66	137795731951058944	69	10	0	0	9	2	3	12	30	f	f	\N	vine_whip	growth	\N	\N	\N	2025-08-31 13:50:39.293655
-57	137795731951058944	4	22	5110	14	14	2	0	9	55	f	t	3	growl	ember	leer	rage	\N	2025-08-31 12:03:25.109242
-62	137795731951058944	129	23	3882	7	14	0	11	2	45	f	t	4	splash	tackle	water_gun	bubble	\N	2025-08-31 12:28:08.248092
-63	137795731951058944	13	14	82	13	12	6	0	1	38	f	t	5	string_shot	harden	\N	\N	\N	2025-08-31 12:33:08.781135
 74	137795731951058944	110	20	0	4	14	0	6	6	57	f	f	\N	poison_sting	tackle	acid	sludge	\N	2025-08-31 20:22:25.353551
 68	137795731951058944	55	26	0	6	2	7	13	14	80	f	f	\N	water_gun	tackle	bubble	surf	\N	2025-08-31 15:55:10.707201
+80	137795731951058944	33	19	0	14	10	10	15	4	57	f	f	\N	tackle	poison_sting	horn_attack	\N	\N	2025-09-01 07:39:03.561357
+57	137795731951058944	4	22	5272	14	14	2	0	9	55	f	t	3	growl	ember	leer	rage	\N	2025-08-31 12:03:25.109242
+62	137795731951058944	129	23	4044	7	14	0	11	2	45	f	t	4	splash	tackle	water_gun	bubble	\N	2025-08-31 12:28:08.248092
 70	137795731951058944	26	20	0	1	1	14	14	15	54	f	f	\N	thundershock	tackle	thunder_wave	thunderbolt	\N	2025-08-31 17:55:35.95025
+63	137795731951058944	13	14	244	13	12	6	0	1	38	f	t	5	string_shot	harden	\N	\N	\N	2025-08-31 12:33:08.781135
+81	408190648924110858	119	20	0	1	4	4	7	13	62	f	f	\N	peck	supersonic	tail_whip	supersonic	\N	2025-09-01 09:55:59.954225
+82	408190648924110858	145	100	0	0	7	4	3	2	290	t	f	\N	thundershock	thunder	agility	light_screen	\N	2025-09-01 10:04:22.787553
 \.
 
 
@@ -502,8 +539,9 @@ COPY public.pokemon_species (id, name, type1, type2, base_hp, base_attack, base_
 COPY public.server_config (guild_id, spawn_channels, message_count, messages_until_spawn) FROM stdin;
 947576847527469137	{947576847527469141}	8	11
 1410749568899092624	{1410749569628635218,-1,1411566371480801292}	7	15
-1411770019360014468	{1411770019968192584,1411770087513526473,-1,1411770087513526473}	3	18
-696311992973131796	{1326949216953831504,1327080626641178764,1326949184305233944,-1,1326949216953831504,1327080626641178764}	16	18
+1410715548769058838	{1410715549486546976,-1,1410715549486546976}	9	12
+1411770019360014468	{1411770019968192584,1411770087513526473,-1,1411770019968192584,1411770087513526473}	3	18
+696311992973131796	{1326949184305233944,1413128673061502986,1326949216953831504,1367549656791257239,1364746635900620841,1360213211315704039,1371855742218539078,1372275863239917598,1372276777443004528,-1,1326949216953831504,1327080626641178764,1413128673061502986}	12	15
 \.
 
 
@@ -521,6 +559,8 @@ COPY public.trades (id, requester_id, target_id, pokemon_offered, pokemon_reques
 
 COPY public.user_inventory (user_id, item_name, quantity) FROM stdin;
 137795731951058944	hm03	1
+741060754660130899	hyper_potion	995
+408190648924110858	masterball	985
 137795731951058944	potion	2
 774175076366024715	greatball	15
 774175076366024715	ultraball	8
@@ -532,7 +572,6 @@ COPY public.user_inventory (user_id, item_name, quantity) FROM stdin;
 741060754660130899	greatball	15
 741060754660130899	ultraball	8
 741060754660130899	masterball	0
-408190648924110858	hyper_potion	984
 137795731951058944	hyper_potion	98
 408190648924110858	hm04	1
 1008209186913529857	ultraball	6
@@ -553,14 +592,13 @@ COPY public.user_inventory (user_id, item_name, quantity) FROM stdin;
 1145424000953090130	ultraball	8
 1145424000953090130	masterball	1
 1145424000953090130	pokeball	28
-137795731951058944	pokeball	4
 774175076366024715	pokeball	28
 774175076366024715	masterball	0
 1008209186913529857	hyper_potion	20
-408190648924110858	masterball	987
-408190648924110858	pokeball	963
-408190648924110858	rare_candy	1
-741060754660130899	hyper_potion	8
+137795731951058944	pokeball	2
+408190648924110858	rare_candy	98
+408190648924110858	pokeball	962
+408190648924110858	hyper_potion	972
 \.
 
 
@@ -572,11 +610,11 @@ COPY public.users (user_id, username, money, badges, default_pokeball, created_a
 1008209186913529857	H2Ogoblet	17905	1	pokeball	2025-08-31 04:29:42.555641
 369809123925295104	Ukra ☀	19199	0	pokeball	2025-08-31 04:25:32.824598
 1145424000953090130	₊ ayama ༯	15033	0	pokeball	2025-08-31 09:10:57.634518
-774175076366024715	sourpotato	15251	0	pokeball	2025-08-31 11:17:25.272756
 272439835694727170	StockedSix	9601619	0	pokeball	2025-08-29 04:11:03.143495
-137795731951058944	hazelseen	11548	7	pokeball	2025-08-31 04:29:42.138705
-408190648924110858	DBZ Clasher	105368	16	pokeball	2025-08-28 15:23:14.598917
-741060754660130899	LavenderBlack	3652	1	pokeball	2025-08-30 15:05:35.864559
+741060754660130899	LavenderBlack	24662	2	pokeball	2025-08-30 15:05:35.864559
+408190648924110858	DBZ Clasher	655646	16	pokeball	2025-08-28 15:23:14.598917
+774175076366024715	sourpotato	15263	0	pokeball	2025-08-31 11:17:25.272756
+137795731951058944	hazelseen	11574	7	pokeball	2025-08-31 04:29:42.138705
 \.
 
 
@@ -584,14 +622,14 @@ COPY public.users (user_id, username, money, badges, default_pokeball, created_a
 -- Name: battles_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.battles_id_seq', 27, true);
+SELECT pg_catalog.setval('public.battles_id_seq', 37, true);
 
 
 --
 -- Name: pokemon_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.pokemon_id_seq', 79, true);
+SELECT pg_catalog.setval('public.pokemon_id_seq', 83, true);
 
 
 --
@@ -607,6 +645,14 @@ SELECT pg_catalog.setval('public.trades_id_seq', 1, false);
 
 ALTER TABLE ONLY public.battles
     ADD CONSTRAINT battles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: npc_completions npc_completions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.npc_completions
+    ADD CONSTRAINT npc_completions_pkey PRIMARY KEY (user_id, npc_type, npc_index);
 
 
 --
@@ -718,6 +764,14 @@ ALTER TABLE ONLY public.battles
 
 
 --
+-- Name: npc_completions npc_completions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.npc_completions
+    ADD CONSTRAINT npc_completions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id);
+
+
+--
 -- Name: pokemon pokemon_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -777,5 +831,5 @@ ALTER TABLE ONLY public.user_inventory
 -- PostgreSQL database dump complete
 --
 
-\unrestrict RG31hjYYsZ8bpz2zlXpgw3ywWeG5Jks6lpluAeOtGiJ3GGdv1HcOipUY68Qf7OY
+\unrestrict 8gHwVBsPlkcyoiGcm9zSvRbETiuG6nJx8wDK6qu9BEWeZjwQHqIJxlos3HkKGKo
 
