@@ -1,5 +1,5 @@
 @echo off
-cd /d "H:\Github Repositories\pokebot"
+cd /d "C:\Users\Public\Desktop\pokebot"
 
 :: Activate virtual environment
 call venv\Scripts\activate

@@ -193,13 +193,19 @@ class Trading(commands.Cog):
             # Recalculate HP for new species
             from data.complete_pokemon_data import COMPLETE_POKEMON_DATA
             new_species_data = COMPLETE_POKEMON_DATA[new_species]
+            old_species_data = COMPLETE_POKEMON_DATA[species_id]
+            old_max_hp = ((old_species_data['base_hp'] + pokemon['hp_iv']) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
             new_max_hp = ((new_species_data['base_hp'] + pokemon['hp_iv']) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
-            hp_increase = new_max_hp - pokemon['current_hp']
             
-            if hp_increase > 0:
+            # Calculate proportional HP (maintain HP percentage)
+            hp_percentage = pokemon['current_hp'] / old_max_hp
+            new_current_hp = int(new_max_hp * hp_percentage)
+            new_current_hp = max(1, new_current_hp)  # Ensure at least 1 HP
+            
+            if new_current_hp != pokemon['current_hp']:
                 await self.bot.db.execute(
-                    "UPDATE pokemon SET current_hp = current_hp + $1 WHERE id = $2",
-                    hp_increase, pokemon_id
+                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                    new_current_hp, pokemon_id
                 )
             
             # Log evolution for potential notification
