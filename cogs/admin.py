@@ -78,6 +78,10 @@ class Admin(commands.Cog):
                 'is_shiny': shiny
             }
             
+            # Clear existing spawns for this guild
+            if interaction.guild.id in spawn_cog.active_spawns:
+                spawn_cog.active_spawns[interaction.guild.id].clear()
+            
             # Spawn in all configured spawn channels
             spawned_count = 0
             for channel_id in spawn_channels:

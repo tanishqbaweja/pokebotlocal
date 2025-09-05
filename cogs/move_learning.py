@@ -73,12 +73,7 @@ class MoveLearning(commands.Cog):
                 try:
                     user_obj = self.bot.get_user(pokemon['owner_id'])
                     if user_obj:
-                        embed = discord.Embed(
-                            title="Move Learned!",
-                            description=f"Your {species_name} learned **{new_move.replace('_', ' ').title()}**!",
-                            color=0x00ff00
-                        )
-                        await user_obj.send(embed=embed)
+                        await user_obj.send(f"🎓 **{species_name}** learned **{new_move.replace('_', ' ').title()}**!")
                 except:
                     pass
             else:
@@ -132,100 +127,101 @@ class MoveLearning(commands.Cog):
         
     def _convert_move_name(self, move_name):
         """Convert move name from display format to database format"""
-        # Convert spaces to underscores, remove special characters, lowercase
+        # First, handle exact matches from the JSON file
+        exact_conversions = {
+            # Direct mappings from levelup_moves.json to database format
+            'PoisonPowder': 'poison_powder',
+            'Sleep Powder': 'sleep_powder',
+            'Stun Spore': 'stun_spore', 
+            'DoubleSlap': 'double_slap',
+            'SolarBeam': 'solar_beam',
+            'ThunderShock': 'thunder_shock',
+            'ThunderPunch': 'thunder_punch',
+            'ViceGrip': 'vise_grip',
+            'Sand-Attack': 'sand_attack',
+            'SonicBoom': 'sonic_boom',
+            'SmokeScreen': 'smokescreen',
+            'Double-Edge': 'double_edge',
+            'BubbleBeam': 'bubble_beam',
+            'IceBeam': 'ice_beam',
+            'IcePunch': 'ice_punch',
+            'FirePunch': 'fire_punch',
+            'HyperBeam': 'hyper_beam',
+            'HyperFang': 'hyper_fang',
+            'MegaDrain': 'mega_drain',
+            'MegaKick': 'mega_kick',
+            'MegaPunch': 'mega_punch',
+            'NightShade': 'night_shade',
+            'PayDay': 'pay_day',
+            'PetalDance': 'petal_dance',
+            'PinMissile': 'pin_missile',
+            'PoisonGas': 'poison_gas',
+            'PoisonSting': 'poison_sting',
+            'QuickAttack': 'quick_attack',
+            'RazorLeaf': 'razor_leaf',
+            'RazorWind': 'razor_wind',
+            'RockSlide': 'rock_slide',
+            'RockThrow': 'rock_throw',
+            'RollingKick': 'rolling_kick',
+            'SeismicToss': 'seismic_toss',
+            'SkullBash': 'skull_bash',
+            'SkyAttack': 'sky_attack',
+            'SoftBoiled': 'soft_boiled',
+            'SpikeCannon': 'spike_cannon',
+            'StringShot': 'string_shot',
+            'SuperFang': 'super_fang',
+            'TailWhip': 'tail_whip',
+            'TakeDown': 'take_down',
+            'ThunderWave': 'thunder_wave',
+            'TriAttack': 'tri_attack',
+            'VineWhip': 'vine_whip',
+            'WaterGun': 'water_gun',
+            'WingAttack': 'wing_attack',
+            'AcidArmor': 'acid_armor',
+            'AuroraBeam': 'aurora_beam',
+            'BodySlam': 'body_slam',
+            'BoneClub': 'bone_club',
+            'ConfuseRay': 'confuse_ray',
+            'CometPunch': 'comet_punch',
+            'DefenseCurl': 'defense_curl',
+            'DragonRage': 'dragon_rage',
+            'DrillPeck': 'drill_peck',
+            'EggBomb': 'egg_bomb',
+            'FireBlast': 'fire_blast',
+            'FireSpin': 'fire_spin',
+            'FocusEnergy': 'focus_energy',
+            'FuryAttack': 'fury_attack',
+            'FurySwipes': 'fury_swipes',
+            'HiJumpKick': 'high_jump_kick',
+            'HornAttack': 'horn_attack',
+            'HornDrill': 'horn_drill',
+            'HydroPump': 'hydro_pump',
+            'JumpKick': 'jump_kick',
+            'KarateChop': 'karate_chop',
+            'LeechLife': 'leech_life',
+            'LeechSeed': 'leech_seed',
+            'LightScreen': 'light_screen',
+            'LovelyKiss': 'lovely_kiss',
+            'LowKick': 'low_kick',
+            'MirrorMove': 'mirror_move',
+            'SwordsDance': 'swords_dance',
+            'DreamEater': 'dream_eater',
+            'DoubleTeam': 'double_team',
+            'DoubleKick': 'double_kick',
+            'Hi Jump Kick': 'high_jump_kick',
+            'Dizzy Punch': 'dizzy_punch'
+        }
+        
+        # Check for exact match first
+        if move_name in exact_conversions:
+            return exact_conversions[move_name]
+            
+        # Convert to lowercase and replace spaces/hyphens with underscores
         converted = move_name.lower().replace(' ', '_').replace('-', '_')
         converted = converted.replace('♀', '_f').replace('♂', '_m')
         converted = converted.replace('.', '').replace("'", '').replace('!', '')
         
-        # Remove common punctuation and handle special characters
-        converted = converted.replace("'", '').replace('.', '').replace('!', '')
-        
-        # Handle special cases - comprehensive mapping
-        special_conversions = {
-            # Common compound words
-            'poisonpowder': 'poison_powder',
-            'sleeppowder': 'sleep_powder', 
-            'stunspore': 'stun_spore',
-            'doubleslap': 'double_slap',
-            'solarbeam': 'solar_beam',
-            'thundershock': 'thunder_shock',
-            'thunderpunch': 'thunder_punch',
-            'vicegrip': 'vise_grip',
-            'sandattack': 'sand_attack',
-            'selfdestruct': 'self_destruct',
-            'sonicboom': 'sonic_boom',
-            'smokescreen': 'smoke_screen',
-            'doubleedge': 'double_edge',
-            'doubleteam': 'double_team',
-            'doublekick': 'double_kick',
-            'bubblebeam': 'bubble_beam',
-            'icebeam': 'ice_beam',
-            'icepunch': 'ice_punch',
-            'firepunch': 'fire_punch',
-            'hyperbeam': 'hyper_beam',
-            'hyperfang': 'hyper_fang',
-            'megadrain': 'mega_drain',
-            'megakick': 'mega_kick',
-            'megapunch': 'mega_punch',
-            'nightshade': 'night_shade',
-            'payday': 'pay_day',
-            'petaldance': 'petal_dance',
-            'pinmissile': 'pin_missile',
-            'poisongas': 'poison_gas',
-            'poisonsting': 'poison_sting',
-            'quickattack': 'quick_attack',
-            'razorleaf': 'razor_leaf',
-            'razorwind': 'razor_wind',
-            'rockslide': 'rock_slide',
-            'rockthrow': 'rock_throw',
-            'rollingkick': 'rolling_kick',
-            'seismictoss': 'seismic_toss',
-            'skullbash': 'skull_bash',
-            'skyattack': 'sky_attack',
-            'softboiled': 'soft_boiled',
-            'spikecannon': 'spike_cannon',
-            'stringshot': 'string_shot',
-            'superfang': 'super_fang',
-            'tailwhip': 'tail_whip',
-            'takedown': 'take_down',
-            'thunderwave': 'thunder_wave',
-            'triattack': 'tri_attack',
-            'vinewhip': 'vine_whip',
-            'watergun': 'water_gun',
-            'wingattack': 'wing_attack',
-            'acidarmor': 'acid_armor',
-            'aurorabeam': 'aurora_beam',
-            'bodyslam': 'body_slam',
-            'boneclub': 'bone_club',
-            'confuseray': 'confuse_ray',
-            'cometpunch': 'comet_punch',
-            'defensecurl': 'defense_curl',
-            'dragonrage': 'dragon_rage',
-            'drillpeck': 'drill_peck',
-            'eggbomb': 'egg_bomb',
-            'fireblast': 'fire_blast',
-            'firespin': 'fire_spin',
-            'focusenergy': 'focus_energy',
-            'furyattack': 'fury_attack',
-            'furyswipes': 'fury_swipes',
-            'hijumpkick': 'high_jump_kick',
-            'hornattack': 'horn_attack',
-            'horndrill': 'horn_drill',
-            'hydropump': 'hydro_pump',
-            'jumpkick': 'jump_kick',
-            'karatechop': 'karate_chop',
-            'leechlife': 'leech_life',
-            'leechseed': 'leech_seed',
-            'lightscreen': 'light_screen',
-            'lovelykiss': 'lovely_kiss',
-            'lowkick': 'low_kick',
-            'mirrormove': 'mirror_move',
-            'swordsdance': 'swords_dance',
-            'sleeptalk': 'sleep_talk',
-            'dreameater': 'dream_eater'
-        }
-        
-        return special_conversions.get(converted, converted)
+        return converted
 
 class MoveChoiceView(discord.ui.View):
     def __init__(self, db, user_id, pending):
