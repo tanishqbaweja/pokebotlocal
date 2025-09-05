@@ -54,7 +54,6 @@ class PokemonBot(commands.Bot):
         await self.load_extension('cogs.pokedex')
         await self.load_extension('cogs.invite')
         await self.load_extension('cogs.move_learning')
-        await self.load_extension('cogs.move_validator_v2')
 
         
     async def on_ready(self):
