@@ -4151,3 +4151,6 @@ discord.app_commands.errors.CommandInvokeError: Command 'spawn' raised an except
 2025-09-05 10:36:01,787 - discord.client - INFO - logging in using static token
 2025-09-05 10:36:04,511 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: a504b5d1cfc120f12089b3c22bb16395).
 2025-09-05 11:18:10,666 - discord.gateway - INFO - Shard ID None has successfully RESUMED session a504b5d1cfc120f12089b3c22bb16395.
+2025-09-05 11:26:35,327 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-05 11:26:35,328 - discord.client - INFO - logging in using static token
+2025-09-05 11:26:37,089 - root - ERROR - Failed to start bot: Extension 'cogs.move_validator_v2' raised an error: ValueError: 'testMove' must be all lower-case
