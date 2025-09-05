@@ -363,7 +363,7 @@ class Battle(commands.Cog):
                             # Send move result first, then handle victory
                             await battle_data['channel'].send(result_text)
                             await self._end_battle(battle_data, attacker_data['id'])
-                            return "You won the battle!"
+                            return ""
                     else:
                         # No gym battle data found - end battle
                         await self._end_battle(battle_data, attacker_data['id'])

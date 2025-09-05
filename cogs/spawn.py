@@ -13,7 +13,7 @@ class Spawn(commands.Cog):
         
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or not message.guild:
+        if not message.guild:
             return
             
         # Get config and parse channels
@@ -59,7 +59,11 @@ class Spawn(commands.Cog):
         
         # Check if spawn should trigger
         if new_count >= config['messages_until_spawn']:
-            await self._spawn_pokemon(spawn_channel, message.guild.id)
+            # Spawn in all configured spawn channels
+            for channel_id in spawn_channels:
+                channel = message.guild.get_channel(channel_id)
+                if channel:
+                    await self._spawn_pokemon(channel, message.guild.id)
             
     async def _spawn_pokemon(self, channel, guild_id):
         # Reset counter and set new spawn requirement
