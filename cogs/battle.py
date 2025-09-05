@@ -5,7 +5,7 @@ import random
 import asyncio
 from data.complete_pokemon_data import COMPLETE_POKEMON_DATA as POKEMON_DATA
 from data.complete_moves_data import COMPLETE_MOVES_DATA as MOVES_DATA, SECONDARY_EFFECTS
-from data.complete_moves_data import TYPE_EFFECTIVENESS
+from data.moves_data import TYPE_EFFECTIVENESS
 
 class Battle(commands.Cog):
     def __init__(self, bot):
@@ -207,6 +207,13 @@ class Battle(commands.Cog):
             attacker_data = battle_data['opponent']
             defender_data = battle_data['challenger']
             
+        # Validate that attacker actually knows this move
+        attacker_pokemon = attacker_data['pokemon']
+        known_moves = [attacker_pokemon.get('move1'), attacker_pokemon.get('move2'), 
+                      attacker_pokemon.get('move3'), attacker_pokemon.get('move4')]
+        if move_name not in known_moves:
+            return f"{attacker_pokemon['name']} doesn't know {move_name.replace('_', ' ').title()}!"
+            
         # Check if Pokemon can move (status effects)
         status_cog = self.bot.get_cog('StatusEffects')
         if status_cog:
@@ -218,7 +225,10 @@ class Battle(commands.Cog):
             
         move = MOVES_DATA.get(move_name)
         if not move:
-            return "Invalid move!"
+            # Log the invalid move for debugging
+            import logging
+            logging.warning(f"Move '{move_name}' not found in MOVES_DATA")
+            return f"Move {move_name.replace('_', ' ').title()} is not properly implemented!"
             
         result_text = f"{attacker_data['pokemon']['name']} used {move_name.replace('_', ' ').title()}!\n"
         
@@ -501,19 +511,21 @@ class Battle(commands.Cog):
                 attacker['current_hp'] = max_hp
                 attacker_data['status'] = 'sleep'
                 attacker_data['status_turns'] = 2
-                await self.bot.db.execute(
-                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                    max_hp, attacker['id']
-                )
+                if attacker['id'] > 0:  # Only update database for real Pokemon
+                    await self.bot.db.execute(
+                        "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                        max_hp, attacker['id']
+                    )
                 return f"{attacker['name']} went to sleep and recovered all HP!"
             else:
                 heal_amount = max_hp // 2
                 new_hp = min(max_hp, attacker['current_hp'] + heal_amount)
                 attacker['current_hp'] = new_hp
-                await self.bot.db.execute(
-                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                    new_hp, attacker['id']
-                )
+                if attacker['id'] > 0:  # Only update database for real Pokemon
+                    await self.bot.db.execute(
+                        "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                        new_hp, attacker['id']
+                    )
                 return f"{attacker['name']} recovered {heal_amount} HP!"
                 
         # Transform (Ditto's signature move)
@@ -562,46 +574,51 @@ class Battle(commands.Cog):
             
         elif move_name == 'dragon_rage':
             defender['current_hp'] = max(0, defender['current_hp'] - 40)
-            await self.bot.db.execute(
-                "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                defender['current_hp'], defender['id']
-            )
+            if defender['id'] > 0:  # Only update database for real Pokemon
+                await self.bot.db.execute(
+                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                    defender['current_hp'], defender['id']
+                )
             return f"{defender['name']} took 40 damage from Dragon Rage!"
             
         elif move_name == 'night_shade':
             damage = attacker['level']
             defender['current_hp'] = max(0, defender['current_hp'] - damage)
-            await self.bot.db.execute(
-                "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                defender['current_hp'], defender['id']
-            )
+            if defender['id'] > 0:  # Only update database for real Pokemon
+                await self.bot.db.execute(
+                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                    defender['current_hp'], defender['id']
+                )
             return f"{defender['name']} took {damage} damage from Night Shade!"
             
         elif move_name == 'seismic_toss':
             damage = attacker['level']
             defender['current_hp'] = max(0, defender['current_hp'] - damage)
-            await self.bot.db.execute(
-                "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                defender['current_hp'], defender['id']
-            )
+            if defender['id'] > 0:  # Only update database for real Pokemon
+                await self.bot.db.execute(
+                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                    defender['current_hp'], defender['id']
+                )
             return f"{defender['name']} took {damage} damage from Seismic Toss!"
             
         elif move_name == 'super_fang':
             damage = defender['current_hp'] // 2
             defender['current_hp'] = max(1, defender['current_hp'] - damage)
-            await self.bot.db.execute(
-                "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                defender['current_hp'], defender['id']
-            )
+            if defender['id'] > 0:  # Only update database for real Pokemon
+                await self.bot.db.execute(
+                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                    defender['current_hp'], defender['id']
+                )
             return f"{defender['name']} took {damage} damage from Super Fang!"
             
         elif move_name == 'psywave':
             damage = random.randint(1, int(attacker['level'] * 1.5))
             defender['current_hp'] = max(0, defender['current_hp'] - damage)
-            await self.bot.db.execute(
-                "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                defender['current_hp'], defender['id']
-            )
+            if defender['id'] > 0:  # Only update database for real Pokemon
+                await self.bot.db.execute(
+                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                    defender['current_hp'], defender['id']
+                )
             return f"{defender['name']} took {damage} damage from Psywave!"
             
         # Other status moves
@@ -634,10 +651,11 @@ class Battle(commands.Cog):
             if attacker['current_hp'] > cost and not attacker_data.get('substitute'):
                 attacker['current_hp'] -= cost
                 attacker_data['substitute'] = cost
-                await self.bot.db.execute(
-                    "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
-                    attacker['current_hp'], attacker['id']
-                )
+                if attacker['id'] > 0:  # Only update database for real Pokemon
+                    await self.bot.db.execute(
+                        "UPDATE pokemon SET current_hp = $1 WHERE id = $2",
+                        attacker['current_hp'], attacker['id']
+                    )
                 return f"{attacker['name']} created a substitute!"
             return "Not enough HP to create a substitute!"
             
@@ -911,7 +929,19 @@ class Battle(commands.Cog):
         return ((species['base_hp'] + pokemon['hp_iv']) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
         
     def _choose_strategic_move(self, npc_data, battle_data, valid_moves):
-        """Enhanced strategic AI for NPC move selection"""
+        """Enhanced strategic AI for NPC move selection - Use enhanced AI module"""
+        # Try to use enhanced NPC AI v2 if available
+        try:
+            from cogs.enhanced_npc_ai_v2 import choose_npc_move_enhanced
+            return choose_npc_move_enhanced(battle_data, npc_data, valid_moves)
+        except ImportError:
+            # Try original enhanced AI
+            try:
+                from cogs.enhanced_npc_ai import choose_npc_move_enhanced
+                return choose_npc_move_enhanced(battle_data, npc_data, valid_moves)
+            except ImportError:
+                pass  # Fall back to built-in AI
+            
         player_data = battle_data['challenger'] if battle_data['challenger']['id'] > 0 else battle_data['opponent']
         player_pokemon = player_data['pokemon']
         npc_pokemon = npc_data['pokemon']
@@ -919,105 +949,161 @@ class Battle(commands.Cog):
         move_scores = []
         
         for move_name in valid_moves:
+            if move_name not in MOVES_DATA:
+                continue
+                
             move = MOVES_DATA[move_name]
             score = 0
             
             # Base score for damage moves
-            if move['power'] > 0:
-                score += move['power']
+            if move['category'] in ['physical', 'special'] and move['power'] > 0:
+                score = move['power']
                 
                 # Type effectiveness bonus
                 effectiveness = self._get_type_effectiveness(move, player_pokemon)
                 if effectiveness >= 2:
                     score += 60  # Super effective
                 elif effectiveness <= 0.5:
-                    score -= 40  # Not very effective
+                    score -= 30  # Not very effective
                 elif effectiveness == 0:
                     score = 0  # No effect
+                    continue
+                    
+                # STAB bonus
+                npc_species = POKEMON_DATA[npc_pokemon['species_id']]
+                if (move['type'].lower() == npc_species['type1'].lower() or 
+                    (npc_species.get('type2') and move['type'].lower() == npc_species['type2'].lower())):
+                    score += 20  # STAB bonus
                     
                 # Priority for high-damage moves when opponent is low HP
                 player_hp_percent = player_pokemon['current_hp'] / self._calculate_max_hp(player_pokemon)
                 if player_hp_percent < 0.3 and move['power'] >= 80:
-                    score += 40  # Go for the KO
+                    score += 50  # Go for the KO
+                elif player_hp_percent > 0.8 and move['power'] < 60:
+                    score -= 20  # Don't use weak moves on healthy opponents
                     
-                # Avoid weak moves when opponent has high HP
-                if player_hp_percent > 0.8 and move['power'] < 40:
-                    score -= 20
+                # Accuracy consideration
+                if move['accuracy'] < 100:
+                    penalty = (100 - move['accuracy']) // 10
+                    score -= penalty
                     
             # Enhanced status move strategy
             elif move['category'] == 'status':
+                npc_hp_percent = npc_pokemon['current_hp'] / self._calculate_max_hp(npc_pokemon)
+                
                 # Healing moves when low HP
                 if move_name in ['recover', 'rest', 'soft_boiled']:
-                    npc_hp_percent = npc_pokemon['current_hp'] / self._calculate_max_hp(npc_pokemon)
                     if npc_hp_percent < 0.25:
-                        score = 90  # Critical healing
+                        score = 95  # Critical healing
                     elif npc_hp_percent < 0.5:
-                        score = 50
+                        score = 60
                     else:
                         score = 10  # Don't heal when healthy
                         
                 # Stat boosting when healthy and no status effects
-                elif move_name in ['swords_dance', 'agility', 'amnesia', 'barrier', 'harden', 'defense_curl']:
-                    npc_hp_percent = npc_pokemon['current_hp'] / self._calculate_max_hp(npc_pokemon)
-                    if npc_hp_percent > 0.7 and not npc_data.get('status'):
+                elif move_name in ['swords_dance', 'agility', 'amnesia', 'barrier', 'harden', 'defense_curl', 'growth']:
+                    if npc_hp_percent > 0.6 and not npc_data.get('status'):
                         # Check if already boosted
                         stat_boosts = npc_data.get('stats', {})
                         stat_map = {
                             'swords_dance': 'attack', 'agility': 'speed', 'amnesia': 'special', 
-                            'barrier': 'defense', 'harden': 'defense', 'defense_curl': 'defense'
+                            'barrier': 'special', 'harden': 'defense', 'defense_curl': 'defense',
+                            'growth': 'special'
                         }
                         relevant_stat = stat_map.get(move_name, 'attack')
-                        if stat_boosts.get(relevant_stat, 0) < 2:
-                            score = 45
+                        current_boost = stat_boosts.get(relevant_stat, 0)
+                        
+                        if current_boost < 2:
+                            score = 55  # Good opportunity to boost
+                        elif current_boost < 4:
+                            score = 25  # Some value in further boosting
                         else:
-                            score = 5  # Already boosted enough
+                            score = 5  # Already well-boosted
+                    else:
+                        score = 15  # Low priority when hurt or statused
                         
                 # Status infliction - prioritize if opponent has no status
-                elif move_name in ['sleep_powder', 'thunder_wave', 'toxic', 'poison_powder', 'stun_spore', 'hypnosis', 'sing']:
+                elif move_name in ['sleep_powder', 'thunder_wave', 'toxic', 'poison_powder', 'stun_spore', 'hypnosis', 'sing', 'spore']:
                     if not player_data.get('status'):
-                        score = 50
-                        # Extra priority for sleep and paralysis
-                        if move_name in ['sleep_powder', 'thunder_wave', 'hypnosis']:
-                            score = 60
+                        # Prioritize sleep and paralysis
+                        if move_name in ['sleep_powder', 'thunder_wave', 'hypnosis', 'spore']:
+                            score = 70
+                        else:
+                            score = 50
                     else:
                         score = 5  # Don't waste turn on already statused opponent
                             
                 # Confusion moves
                 elif move_name in ['confuse_ray', 'supersonic']:
                     if not player_data.get('confused'):
-                        score = 35
+                        score = 40
                     else:
                         score = 5  # Don't confuse already confused opponent
                         
                 # Stat reduction moves
-                elif move_name in ['growl', 'leer', 'sand_attack', 'smokescreen']:
+                elif move_name in ['growl', 'leer', 'sand_attack', 'smokescreen', 'screech', 'tail_whip']:
                     player_stats = player_data.get('stats', {})
                     stat_map = {
-                        'growl': 'attack', 'leer': 'defense', 
-                        'sand_attack': 'accuracy', 'smokescreen': 'accuracy'
+                        'growl': 'attack', 'leer': 'defense', 'tail_whip': 'defense',
+                        'sand_attack': 'accuracy', 'smokescreen': 'accuracy',
+                        'screech': 'defense'
                     }
                     relevant_stat = stat_map.get(move_name, 'attack')
-                    if player_stats.get(relevant_stat, 0) > -3:
-                        score = 25  # Moderate priority for stat reduction
+                    current_reduction = player_stats.get(relevant_stat, 0)
+                    
+                    if current_reduction > -3:
+                        score = 30  # Moderate priority for debuffing
                     else:
-                        score = 5  # Don't over-debuff
+                        score = 5  # Already well-debuffed
                         
+                # Setup moves
+                elif move_name in ['substitute', 'leech_seed', 'light_screen', 'reflect', 'focus_energy']:
+                    if move_name == 'substitute' and npc_hp_percent > 0.5:
+                        score = 45
+                    elif move_name == 'leech_seed' and not player_data.get('seeded'):
+                        score = 40
+                    elif move_name in ['light_screen', 'reflect'] and npc_hp_percent > 0.6:
+                        score = 35
+                    elif move_name == 'focus_energy' and not npc_data.get('focus_energy'):
+                        score = 30
+                    else:
+                        score = 10
+                        
+                # Default status move score
+                else:
+                    score = 15
+                    
+            # Special damage moves (fixed damage)
+            elif move_name in ['dragon_rage', 'sonic_boom', 'night_shade', 'seismic_toss']:
+                if move_name == 'dragon_rage':
+                    score = 40 if player_pokemon['current_hp'] <= 40 else 30
+                elif move_name == 'sonic_boom':
+                    score = 20 if player_pokemon['current_hp'] <= 20 else 15
+                elif move_name in ['night_shade', 'seismic_toss']:
+                    damage = npc_pokemon['level']
+                    score = damage if player_pokemon['current_hp'] <= damage * 1.5 else damage * 0.7
+                    
             move_scores.append((move_name, score))
             
         # Choose best move with strategic randomness
         move_scores.sort(key=lambda x: x[1], reverse=True)
         
-        # 80% chance to pick best move, 20% chance for variety (more strategic)
-        if random.randint(1, 100) <= 80 and move_scores[0][1] > 0:
-            return move_scores[0][0]
+        # Filter out moves with very low scores
+        viable_moves = [m for m in move_scores if m[1] > 0]
+        if not viable_moves:
+            return random.choice(valid_moves)
+            
+        # 70% chance to pick best move, 25% for second best, 5% for third best
+        rand = random.randint(1, 100)
+        
+        if rand <= 70:
+            return viable_moves[0][0]
+        elif rand <= 95 and len(viable_moves) > 1:
+            return viable_moves[1][0]
+        elif len(viable_moves) > 2:
+            return viable_moves[2][0]
         else:
-            # Pick from top 3 moves for more focused strategy
-            top_moves = move_scores[:min(3, len(move_scores))]
-            valid_top = [m for m in top_moves if m[1] > 0]
-            if valid_top:
-                return random.choice(valid_top)[0]
-            else:
-                return random.choice(valid_moves)
+            return viable_moves[0][0]
         
     async def _handle_npc_turn(self, battle_data):
         """Handle NPC turn automatically"""

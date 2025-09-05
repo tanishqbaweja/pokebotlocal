@@ -197,8 +197,46 @@ class Shop(commands.Cog):
     async def _use_item_on_pokemon(self, item, pokemon):
         from data.complete_pokemon_data import COMPLETE_POKEMON_DATA
         
+        # Rare Candy - Level up item
+        if item == "rare_candy":
+            if pokemon['level'] >= 100:
+                species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
+                species_name = species['name'] if species else 'Pokemon'
+                return f"{species_name} is already at max level!"
+                
+            # Level up the Pokemon
+            new_level = pokemon['level'] + 1
+            
+            # Recalculate HP for new level
+            species = COMPLETE_POKEMON_DATA[pokemon['species_id']]
+            old_max_hp = ((species['base_hp'] + pokemon['hp_iv']) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
+            new_max_hp = ((species['base_hp'] + pokemon['hp_iv']) * 2 * new_level // 100) + new_level + 10
+            hp_increase = new_max_hp - old_max_hp
+            new_current_hp = pokemon['current_hp'] + hp_increase
+            
+            # Update Pokemon in database
+            await self.bot.db.execute(
+                "UPDATE pokemon SET level = $1, current_hp = $2 WHERE id = $3",
+                new_level, new_current_hp, pokemon['id']
+            )
+            
+            # Check for evolution
+            evolution_cog = self.bot.get_cog('Evolution')
+            if evolution_cog and 'evolves_at' in species and new_level >= species['evolves_at']:
+                # Update the pokemon dict for evolution check
+                pokemon['level'] = new_level
+                pokemon['current_hp'] = new_current_hp
+                await evolution_cog._evolve_pokemon(pokemon)
+                # Get updated species after potential evolution
+                updated_pokemon = await self.bot.db.fetchrow("SELECT * FROM pokemon WHERE id = $1", pokemon['id'])
+                if updated_pokemon and updated_pokemon['species_id'] != pokemon['species_id']:
+                    new_species = COMPLETE_POKEMON_DATA[updated_pokemon['species_id']]
+                    return f"{species['name']} grew to level {new_level} and evolved into {new_species['name']}!"
+            
+            return f"{species['name']} grew to level {new_level}!"
+        
         # Healing items
-        if item in ["potion", "super_potion", "hyper_potion", "max_potion", "full_restore"]:
+        elif item in ["potion", "super_potion", "hyper_potion", "max_potion", "full_restore"]:
             species = COMPLETE_POKEMON_DATA.get(pokemon['species_id'])
             if not species:
                 return f"Error: Invalid Pokemon species ID {pokemon['species_id']}"

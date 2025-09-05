@@ -70,12 +70,16 @@ class Spawn(commands.Cog):
         )
             
         # Select random Pokemon with evolution bias
+        from data.complete_pokemon_data import EVOLUTION_STAGES
         evolution_pool = []
         for pokemon_id, data in POKEMON_DATA.items():
+            # Get evolution stage from EVOLUTION_STAGES or default to 1
+            evolution_stage = EVOLUTION_STAGES.get(pokemon_id, 1)
+            
             # Base forms get higher weight, evolved forms get lower weight but higher levels
-            if data.get('evolution_stage', 1) == 1:  # Base form
+            if evolution_stage == 1:  # Base form
                 weight = RARITY_WEIGHTS[data['rarity']] * 10
-            elif data.get('evolution_stage', 1) == 2:  # First evolution
+            elif evolution_stage == 2:  # First evolution
                 weight = RARITY_WEIGHTS[data['rarity']] * 3
             else:  # Final evolution
                 weight = RARITY_WEIGHTS[data['rarity']] * 1
@@ -85,7 +89,7 @@ class Spawn(commands.Cog):
         pokemon_data = POKEMON_DATA[species_id]
         
         # Level based on evolution stage and rarity
-        evolution_stage = pokemon_data.get('evolution_stage', 1)
+        evolution_stage = EVOLUTION_STAGES.get(species_id, 1)
         if evolution_stage == 1:  # Base form
             level = random.randint(5, 25)
         elif evolution_stage == 2:  # First evolution
