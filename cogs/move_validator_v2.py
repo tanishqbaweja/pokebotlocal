@@ -152,7 +152,7 @@ class MoveValidatorV2(commands.Cog):
             
         return False
         
-    @app_commands.command(name="testMove", description="Test a specific move implementation (Admin only)")
+    @app_commands.command(name="testmove", description="Test a specific move implementation (Admin only)")
     async def test_move(self, interaction: discord.Interaction, move_name: str):
         # Check admin permissions
         import os
