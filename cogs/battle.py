@@ -358,11 +358,12 @@ class Battle(commands.Cog):
                             battle_data['turn'] = defender_data['id']  # NPC's turn with new Pokemon
                             return result_text
                         else:
-                            # No more NPC Pokemon - player wins, end battle immediately
-                            result_text += "\nYou won the battle!"
+                            # No more NPC Pokemon - player wins
                             battle_data['turn'] = None  # Clear turn to stop battle
+                            # Send move result first, then handle victory
+                            await battle_data['channel'].send(result_text)
                             await self._end_battle(battle_data, attacker_data['id'])
-                            return result_text
+                            return "You won the battle!"
                     else:
                         # No gym battle data found - end battle
                         await self._end_battle(battle_data, attacker_data['id'])
@@ -373,8 +374,10 @@ class Battle(commands.Cog):
                     available_pokemon = [p for p in fresh_party if p['current_hp'] > 0]
                     
                     if len(available_pokemon) == 0:  # No Pokemon left
+                        # Send move result first, then handle victory
+                        await battle_data['channel'].send(result_text)
                         await self._end_battle(battle_data, attacker_data['id'])
-                        return result_text
+                        return ""
                     else:
                         # Auto-send next available Pokemon
                         next_pokemon = available_pokemon[0]
