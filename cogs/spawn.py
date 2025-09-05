@@ -59,20 +59,17 @@ class Spawn(commands.Cog):
         
         # Check if spawn should trigger
         if new_count >= config['messages_until_spawn']:
-            # Spawn in all configured spawn channels
+            # Generate single Pokemon data for all channels
+            spawn_data = await self._generate_pokemon_data()
+            
+            # Spawn same Pokemon in all configured spawn channels
             for channel_id in spawn_channels:
                 channel = message.guild.get_channel(channel_id)
                 if channel:
-                    await self._spawn_pokemon(channel, message.guild.id)
+                    await self._spawn_pokemon(channel, message.guild.id, spawn_data)
             
-    async def _spawn_pokemon(self, channel, guild_id):
-        # Reset counter and set new spawn requirement
-        new_requirement = random.randint(10, 20)
-        await self.bot.db.execute(
-            "UPDATE server_config SET message_count = 0, messages_until_spawn = $1 WHERE guild_id = $2",
-            new_requirement, guild_id
-        )
-            
+    async def _generate_pokemon_data(self):
+        """Generate Pokemon data for spawning"""
         # Select random Pokemon with evolution bias
         from data.complete_pokemon_data import EVOLUTION_STAGES
         evolution_pool = []
@@ -108,6 +105,28 @@ class Spawn(commands.Cog):
         # Check for shiny (1/4096 chance)
         is_shiny = random.randint(1, 4096) == 1
         
+        return {
+            'species_id': species_id,
+            'level': level,
+            'is_shiny': is_shiny
+        }
+    
+    async def _spawn_pokemon(self, channel, guild_id, spawn_data=None):
+        # Reset counter and set new spawn requirement (only on first call)
+        if spawn_data is None:
+            spawn_data = await self._generate_pokemon_data()
+            
+        new_requirement = random.randint(10, 20)
+        await self.bot.db.execute(
+            "UPDATE server_config SET message_count = 0, messages_until_spawn = $1 WHERE guild_id = $2",
+            new_requirement, guild_id
+        )
+        
+        species_id = spawn_data['species_id']
+        level = spawn_data['level']
+        is_shiny = spawn_data['is_shiny']
+        pokemon_data = POKEMON_DATA[species_id]
+        
         # Create spawn embed
         embed = discord.Embed(
             title="A wild Pokemon appeared!",
@@ -136,16 +155,22 @@ class Spawn(commands.Cog):
         try:
             spawn_message = await channel.send(embed=embed, files=files)
             
-            # Store active spawn by channel
+            # Store active spawn by guild (shared across all channels)
             if guild_id not in self.active_spawns:
                 self.active_spawns[guild_id] = {}
-            self.active_spawns[guild_id][channel.id] = {
-                'species_id': species_id,
-                'level': level,
-                'is_shiny': is_shiny,
-                'channel_id': channel.id,
-                'message': spawn_message
-            }
+            
+            # Use a shared spawn ID for all channels
+            spawn_id = f"{species_id}_{level}_{is_shiny}"
+            if spawn_id not in self.active_spawns[guild_id]:
+                self.active_spawns[guild_id][spawn_id] = {
+                    'species_id': species_id,
+                    'level': level,
+                    'is_shiny': is_shiny,
+                    'caught_by': set(),
+                    'channels': {}
+                }
+            
+            self.active_spawns[guild_id][spawn_id]['channels'][channel.id] = spawn_message
         except (discord.HTTPException, discord.Forbidden) as e:
             import logging
             logging.error(f"Failed to send spawn message: {e}")
@@ -186,15 +211,17 @@ class Spawn(commands.Cog):
         
         spawn_message = await channel.send(embed=embed, files=files)
         
-        # Store active spawn by channel (same as normal spawn)
+        # Store active spawn (same as normal spawn)
         if guild_id not in self.active_spawns:
             self.active_spawns[guild_id] = {}
-        self.active_spawns[guild_id][channel.id] = {
+        
+        spawn_id = f"{species_id}_{level}_{is_shiny}"
+        self.active_spawns[guild_id][spawn_id] = {
             'species_id': species_id,
             'level': level,
             'is_shiny': is_shiny,
-            'channel_id': channel.id,
-            'message': spawn_message
+            'caught_by': set(),
+            'channels': {channel.id: spawn_message}
         }
         
     @commands.hybrid_command(name="catch", description="Attempt to catch the spawned Pokemon")
@@ -209,12 +236,23 @@ class Spawn(commands.Cog):
         guild_id = ctx.guild.id
         user_id = ctx.author.id
         
-        # Check if there's an active spawn in this channel
-        if guild_id not in self.active_spawns or ctx.channel.id not in self.active_spawns[guild_id]:
-            await ctx.send("There's no Pokemon to catch in this channel!", ephemeral=True)
+        # Check if there's an active spawn in this guild
+        if guild_id not in self.active_spawns:
+            await ctx.send("There's no Pokemon to catch!", ephemeral=True)
             return
             
-        spawn_data = self.active_spawns[guild_id][ctx.channel.id]
+        # Find spawn in this channel
+        spawn_data = None
+        spawn_key = None
+        for key, data in self.active_spawns[guild_id].items():
+            if ctx.channel.id in data.get('channels', {}):
+                spawn_data = data
+                spawn_key = key
+                break
+                
+        if not spawn_data:
+            await ctx.send("There's no Pokemon to catch in this channel!", ephemeral=True)
+            return
             
         # Check if user exists
         user = await self.bot.db.get_user(user_id)
@@ -276,10 +314,9 @@ class Spawn(commands.Cog):
         base_rate = min(1.0, base_rate)  # Cap at 100%
         
         # Check if user already caught this spawn
-        if guild_id in self.active_spawns and ctx.channel.id in self.active_spawns[guild_id] and 'caught_by' in self.active_spawns[guild_id][ctx.channel.id]:
-            if user_id in self.active_spawns[guild_id][ctx.channel.id]['caught_by']:
-                await ctx.send("You already caught this Pokemon!", ephemeral=True)
-                return
+        if user_id in spawn_data['caught_by']:
+            await ctx.send("You already caught this Pokemon!", ephemeral=True)
+            return
         
         # Attempt catch
         if random.random() < base_rate:
@@ -299,9 +336,7 @@ class Spawn(commands.Cog):
             )
             
             # Mark as caught by this user
-            if 'caught_by' not in self.active_spawns[guild_id][ctx.channel.id]:
-                self.active_spawns[guild_id][ctx.channel.id]['caught_by'] = set()
-            self.active_spawns[guild_id][ctx.channel.id]['caught_by'].add(user_id)
+            spawn_data['caught_by'].add(user_id)
             
             shiny_text = "✨ **Shiny** " if spawn_data['is_shiny'] else ""
             embed = discord.Embed(
