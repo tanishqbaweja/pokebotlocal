@@ -1,0 +1,535 @@
+        move_learning_cog = self.bot.get_cog('MoveLearning')
+        if (challenger_battle and challenger_battle.get('server_id') == server_id) or \
+           (opponent_battle and opponent_battle.get('server_id') == server_id):
+        challenger_alive = [p for p in challenger_party if p['current_hp'] > 0] if challenger_party else []
+        opponent_alive = [p for p in opponent_party if p['current_hp'] > 0] if opponent_party else []
+                       VALUES ($1, $2, $3, $4, $5, $6, 'active') RETURNING id""",
+                    challenger_id, opponent_id, challenger_pokemon['id'], opponent_pokemon['id'],
+            'id': battle_id,
+            'challenger': {'id': challenger_id, 'pokemon': challenger_pokemon, 'party': challenger_party, 'current_index': 0, 'stats': {}},
+            'opponent': {'id': opponent_id, 'pokemon': opponent_pokemon, 'party': opponent_party, 'current_index': 0, 'stats': {}},
+            'turn': challenger_id,
+            'channel': channel,
+            'server_id': channel.guild.id
+            battle_data['is_first_completion'] = is_first_completion
+        for side in ['challenger', 'opponent']:
+            pokemon = battle_data[side]['pokemon']
+            battle_data[side]['stats'] = {
+                'attack': 0, 'defense': 0, 'special': 0, 'speed': 0,
+                'accuracy': 0, 'evasion': 0
+            battle_data[side]['status'] = None
+            battle_data[side]['status_turns'] = 0
+            battle_data[side]['confused'] = False
+            battle_data[side]['confusion_turns'] = 0
+            battle_data[side]['seeded'] = False
+            battle_data[side]['substitute'] = 0
+            battle_data[side]['transformed'] = False
+            battle_data[side]['focus_energy'] = False
+            battle_data[side]['disabled_move'] = None
+            battle_data[side]['disable_turns'] = 0
+        battle_data['turn_start_time'] = asyncio.get_event_loop().time()
+        battle_data['turn_timeout_task'] = None
+        challenger_pokemon = battle_data['challenger']['pokemon']
+        opponent_pokemon = battle_data['opponent']['pokemon']
+        c_hp_percent = (challenger_pokemon['current_hp'] / self._calculate_max_hp(challenger_pokemon)) * 100
+        c_status_text = self._get_status_display(battle_data['challenger'])
+            name=f"{challenger_pokemon['name']} (Lv.{challenger_pokemon['level']})",
+            value=f"HP: {challenger_pokemon['current_hp']}/{self._calculate_max_hp(challenger_pokemon)} ({c_hp_percent:.0f}%)\n{c_status_text}",
+        o_hp_percent = (opponent_pokemon['current_hp'] / self._calculate_max_hp(opponent_pokemon)) * 100
+        o_status_text = self._get_status_display(battle_data['opponent'])
+            name=f"{opponent_pokemon['name']} (Lv.{opponent_pokemon['level']})",
+            value=f"HP: {opponent_pokemon['current_hp']}/{self._calculate_max_hp(opponent_pokemon)} ({o_hp_percent:.0f}%)\n{o_status_text}",
+        current_user = battle_data['turn']
+            message = await battle_data['channel'].send(embed=embed, view=view)
+        if battle_data.get('turn_timeout_task'):
+            battle_data['turn_timeout_task'].cancel()
+        battle_data['turn_timeout_task'] = asyncio.create_task(self._handle_turn_timeout(battle_data, current_user))
+        battle_data['turn_start_time'] = asyncio.get_event_loop().time()
+        if battle_data['turn'] != user_id:
+        if battle_data.get('turn_timeout_task'):
+            battle_data['turn_timeout_task'].cancel()
+        if user_id == battle_data['challenger']['id']:
+            attacker_data = battle_data['challenger']
+            defender_data = battle_data['opponent']
+            attacker_data = battle_data['opponent']
+            defender_data = battle_data['challenger']
+        attacker_pokemon = attacker_data['pokemon']
+            return f"{attacker_pokemon['name']} doesn't know {move_name.replace('_', ' ').title()}!"
+        status_cog = self.bot.get_cog('StatusEffects')
+                battle_data['turn'] = defender_data['id']
+            return f"Move {move_name.replace('_', ' ').title()} is not properly implemented!"
+        result_text = f"{attacker_data['pokemon']['name']} used {move_name.replace('_', ' ').title()}!\n"
+        if move['category'] != 'status' and not self._check_move_accuracy(move, attacker_data, defender_data):
+            battle_data['turn'] = defender_data['id']
+        if move['category'] == 'status':
+            attacker_data['pokemon'] = dict(attacker_data['pokemon'])
+            attacker_data['pokemon']['last_move_used'] = move_name
+            if defender_data['pokemon']['current_hp'] <= 0:
+                result_text += f"\n{defender_data['pokemon']['name']} fainted!"
+                if attacker_data['pokemon']['id'] > 0:
+                    exp_gained = (defender_data['pokemon']['level'] * 50) // attacker_data['pokemon']['level']
+                        experience_cog = self.bot.get_cog('Experience')
+                            await experience_cog._add_experience(attacker_data['pokemon'], exp_gained)
+                            result_text += f"\n{attacker_data['pokemon']['name']} gained {exp_gained} experience!"
+            if move_name in ['selfdestruct', 'explosion'] and attacker_data['pokemon']['current_hp'] > 0:
+                attacker_data['pokemon']['current_hp'] = 0
+                if attacker_data['pokemon']['id'] > 0:  # Only update database for real Pokemon
+                        attacker_data['pokemon']['id']
+                result_text += f"\n{attacker_data['pokemon']['name']} fainted from the explosion!"
+            new_hp = max(0, defender_data['pokemon']['current_hp'] - damage)
+            if defender_data['pokemon']['id'] > 0:  # Only update database for real Pokemon
+                    new_hp, defender_data['pokemon']['id']
+            defender_data['pokemon'] = dict(defender_data['pokemon'])
+            defender_data['pokemon']['current_hp'] = new_hp
+            effectiveness = self._get_type_effectiveness(move, defender_data['pokemon'])
+                result_text += f"\n{defender_data['pokemon']['name']} is immune to that attack!"
+            attacker_data['pokemon'] = dict(attacker_data['pokemon'])
+            attacker_data['pokemon']['last_move_used'] = move_name
+            if defender_data['pokemon']['current_hp'] <= 0:
+                result_text += f"\n{defender_data['pokemon']['name']} fainted!"
+                if attacker_data['pokemon']['id'] > 0:
+                    exp_gained = (defender_data['pokemon']['level'] * 50) // attacker_data['pokemon']['level']
+                        experience_cog = self.bot.get_cog('Experience')
+                            await experience_cog._add_experience(attacker_data['pokemon'], exp_gained)
+                            result_text += f"\n{attacker_data['pokemon']['name']} gained {exp_gained} experience!"
+                if defender_data['id'] < 0:
+                    gym_cog = self.bot.get_cog('Gym')
+                    player_id = attacker_data['id']
+                        gym_battle['npc_team_index'] += 1
+                        if gym_battle['npc_team_index'] < len(gym_battle['npc_team']):
+                            next_npc_data = gym_battle['npc_team'][gym_battle['npc_team_index']]
+                            defender_data['pokemon'] = dict(next_pokemon)
+                            defender_data['stats'] = {
+                                'attack': 0, 'defense': 0, 'special': 0, 'speed': 0,
+                                'accuracy': 0, 'evasion': 0
+                            defender_data['status'] = None
+                            defender_data['status_turns'] = 0
+                            defender_data['confused'] = False
+                            defender_data['confusion_turns'] = 0
+                            defender_data['seeded'] = False
+                            defender_data['substitute'] = 0
+                            result_text += f"\nEnemy sent out {next_pokemon['name']}!"
+                            battle_data['turn'] = defender_data['id']  # NPC's turn with new Pokemon
+                            battle_data['turn'] = None  # Clear turn to stop battle
+                            await self._end_battle(battle_data, attacker_data['id'])
+                        await self._end_battle(battle_data, attacker_data['id'])
+                    fresh_party = await self.bot.db.get_user_pokemon(defender_data['id'], in_party=True)
+                    available_pokemon = [p for p in fresh_party if p['current_hp'] > 0]
+                        await self._end_battle(battle_data, attacker_data['id'])
+                        defender_data['pokemon'] = dict(next_pokemon)
+                        defender_data['party'] = fresh_party  # Update cached party
+                            if p['id'] == next_pokemon['id']:
+                                defender_data['current_index'] = i
+                        defender_data['stats'] = {
+                            'attack': 0, 'defense': 0, 'special': 0, 'speed': 0,
+                            'accuracy': 0, 'evasion': 0
+                        defender_data['status'] = None
+                        defender_data['status_turns'] = 0
+                        defender_data['confused'] = False
+                        defender_data['confusion_turns'] = 0
+                        defender_data['seeded'] = False
+                        defender_data['substitute'] = 0
+                        result_text += f"\n<@{defender_data['id']}> sent out {next_pokemon['name']}!"
+                if attacker_data['pokemon']['id'] > 0:
+                        attacker_data['pokemon']['current_hp'], attacker_data['pokemon']['id']
+                if defender_data['pokemon']['id'] > 0:
+                        defender_data['pokemon']['current_hp'], defender_data['pokemon']['id']
+        if defender_data['pokemon']['current_hp'] > 0:
+            battle_data['turn'] = defender_data['id']
+        attacker = attacker_data['pokemon']
+        defender = defender_data['pokemon']
+        if move_name in ['growl', 'tail_whip', 'leer']:
+            if defender_data['stats']['attack'] > -6:
+                defender_data['stats']['attack'] -= 1
+                return f"{defender['name']}'s Attack fell!"
+            return f"{defender['name']}'s Attack won't go any lower!"
+        elif move_name in ['screech', 'acid']:
+            if defender_data['stats']['defense'] > -6:
+                defender_data['stats']['defense'] -= 1
+                return f"{defender['name']}'s Defense fell!"
+            return f"{defender['name']}'s Defense won't go any lower!"
+        elif move_name in ['sand_attack', 'smokescreen', 'flash', 'kinesis']:
+            if defender_data['stats']['accuracy'] > -6:
+                defender_data['stats']['accuracy'] -= 1
+                return f"{defender['name']}'s accuracy fell!"
+            return f"{defender['name']}'s accuracy won't go any lower!"
+        elif move_name in ['swords_dance', 'sharpen', 'meditate']:
+            if attacker_data['stats']['attack'] < 6:
+                attacker_data['stats']['attack'] += 2 if move_name == 'swords_dance' else 1
+                return f"{attacker['name']}'s Attack rose!"
+            return f"{attacker['name']}'s Attack won't go any higher!"
+        elif move_name in ['harden', 'withdraw', 'defense_curl', 'acid_armor']:
+            boost = 2 if move_name == 'acid_armor' else 1
+            if attacker_data['stats']['defense'] < 6:
+                attacker_data['stats']['defense'] += boost
+                return f"{attacker['name']}'s Defense rose!"
+            return f"{attacker['name']}'s Defense won't go any higher!"
+        elif move_name in ['agility', 'string_shot']:
+            if move_name == 'agility':
+                if attacker_data['stats']['speed'] < 6:
+                    attacker_data['stats']['speed'] += 2
+                    return f"{attacker['name']}'s Speed rose sharply!"
+                return f"{attacker['name']}'s Speed won't go any higher!"
+                if defender_data['stats']['speed'] > -6:
+                    defender_data['stats']['speed'] -= 1
+                    return f"{defender['name']}'s Speed fell!"
+                return f"{defender['name']}'s Speed won't go any lower!"
+        elif move_name in ['amnesia', 'barrier']:
+            if attacker_data['stats']['special'] < 6:
+                attacker_data['stats']['special'] += 2
+                return f"{attacker['name']}'s Special rose sharply!"
+            return f"{attacker['name']}'s Special won't go any higher!"
+        elif move_name in ['growth']:
+            if attacker_data['stats']['special'] < 6:
+                attacker_data['stats']['special'] += 1
+                return f"{attacker['name']}'s Special rose!"
+            return f"{attacker['name']}'s Special won't go any higher!"
+        elif move_name in ['poison_powder', 'poison_gas', 'toxic']:
+            if defender_data.get('status') is None:
+                defender_data['status'] = 'poison'
+                if move_name == 'toxic':
+                    defender_data['toxic_counter'] = 1  # Toxic gets worse each turn
+                return f"{defender['name']} was poisoned!"
+            return f"{defender['name']} is already affected by a status condition!"
+        elif move_name in ['sleep_powder', 'spore', 'sing', 'hypnosis', 'lovely_kiss']:
+            if defender_data.get('status') is None:
+                defender_data['status'] = 'sleep'
+                defender_data['status_turns'] = random.randint(1, 3)
+                return f"{defender['name']} fell asleep!"
+            return f"{defender['name']} is already affected by a status condition!"
+        elif move_name in ['stun_spore', 'thunder_wave', 'glare']:
+            if defender_data.get('status') is None:
+                defender_data['status'] = 'paralysis'
+                return f"{defender['name']} was paralyzed!"
+            return f"{defender['name']} is already affected by a status condition!"
+        elif move_name == 'supersonic' or move_name == 'confuse_ray':
+            defender_data['confused'] = True
+            defender_data['confusion_turns'] = random.randint(2, 5)
+            return f"{defender['name']} became confused!"
+        elif move_name in ['recover', 'rest', 'soft_boiled']:
+            if move_name == 'rest':
+                heal_amount = max_hp - attacker['current_hp']
+                attacker['current_hp'] = max_hp
+                attacker_data['status'] = 'sleep'
+                attacker_data['status_turns'] = 2
+                if attacker['id'] > 0:  # Only update database for real Pokemon
+                        max_hp, attacker['id']
+                return f"{attacker['name']} went to sleep and recovered all HP!"
+                new_hp = min(max_hp, attacker['current_hp'] + heal_amount)
+                attacker['current_hp'] = new_hp
+                if attacker['id'] > 0:  # Only update database for real Pokemon
+                        new_hp, attacker['id']
+                return f"{attacker['name']} recovered {heal_amount} HP!"
+        elif move_name == 'transform':
+            defender_species = POKEMON_DATA[defender['species_id']]
+            attacker_species = POKEMON_DATA[attacker['species_id']]
+            original_hp = attacker['current_hp']
+            attacker_data['transformed'] = True
+            attacker_data['original_species'] = attacker['species_id']
+            attacker['species_id'] = defender['species_id']
+            attacker['name'] = defender['name']
+            attacker['attack_iv'] = defender['attack_iv']
+            attacker['defense_iv'] = defender['defense_iv']
+            attacker['special_iv'] = defender['special_iv']
+            attacker['speed_iv'] = defender['speed_iv']
+            attacker_data['stats'] = dict(defender_data['stats'])
+            return f"{attacker['name']} transformed into {defender['name']}!"
+        elif move_name == 'sonic_boom':
+            defender['current_hp'] = max(0, defender['current_hp'] - damage)
+            if defender['id'] > 0:  # Only update database for real Pokemon
+                    defender['current_hp'], defender['id']
+            return f"{defender['name']} took {damage} damage from Sonic Boom!"
+        elif move_name == 'dragon_rage':
+            defender['current_hp'] = max(0, defender['current_hp'] - 40)
+            if defender['id'] > 0:  # Only update database for real Pokemon
+                    defender['current_hp'], defender['id']
+            return f"{defender['name']} took 40 damage from Dragon Rage!"
+        elif move_name == 'night_shade':
+            damage = attacker['level']
+            defender['current_hp'] = max(0, defender['current_hp'] - damage)
+            if defender['id'] > 0:  # Only update database for real Pokemon
+                    defender['current_hp'], defender['id']
+            return f"{defender['name']} took {damage} damage from Night Shade!"
+        elif move_name == 'seismic_toss':
+            damage = attacker['level']
+            defender['current_hp'] = max(0, defender['current_hp'] - damage)
+            if defender['id'] > 0:  # Only update database for real Pokemon
+                    defender['current_hp'], defender['id']
+            return f"{defender['name']} took {damage} damage from Seismic Toss!"
+        elif move_name == 'super_fang':
+            damage = defender['current_hp'] // 2
+            defender['current_hp'] = max(1, defender['current_hp'] - damage)
+            if defender['id'] > 0:  # Only update database for real Pokemon
+                    defender['current_hp'], defender['id']
+            return f"{defender['name']} took {damage} damage from Super Fang!"
+        elif move_name == 'psywave':
+            damage = random.randint(1, int(attacker['level'] * 1.5))
+            defender['current_hp'] = max(0, defender['current_hp'] - damage)
+            if defender['id'] > 0:  # Only update database for real Pokemon
+                    defender['current_hp'], defender['id']
+            return f"{defender['name']} took {damage} damage from Psywave!"
+        elif move_name in ['selfdestruct', 'explosion']:
+            base_power = 200 if move_name == 'selfdestruct' else 250
+            defender['current_hp'] = max(0, defender['current_hp'] - damage)
+            if defender['id'] > 0:
+                    defender['current_hp'], defender['id']
+            return f"{defender['name']} took {damage} damage from {move_name.replace('_', ' ').title()}!"
+        elif move_name in ['double_team', 'minimize']:
+            if attacker_data['stats']['evasion'] < 6:
+                attacker_data['stats']['evasion'] += 1
+                return f"{attacker['name']}'s evasiveness rose!"
+            return f"{attacker['name']}'s evasiveness won't go any higher!"
+        elif move_name == 'haze':
+                side['stats'] = {'attack': 0, 'defense': 0, 'special': 0, 'speed': 0, 'accuracy': 0, 'evasion': 0}
+        elif move_name in ['mist', 'light_screen', 'reflect']:
+            effect_name = {'mist': 'Mist', 'light_screen': 'Light Screen', 'reflect': 'Reflect'}[move_name]
+            return f"{attacker['name']} is protected by {effect_name}!"
+        elif move_name == 'leech_seed':
+            if not defender_data.get('seeded'):
+                defender_data['seeded'] = True
+                return f"{defender['name']} was seeded!"
+            return f"{defender['name']} is already seeded!"
+        elif move_name == 'substitute':
+            if attacker['current_hp'] > cost and not attacker_data.get('substitute'):
+                attacker['current_hp'] -= cost
+                attacker_data['substitute'] = cost
+                if attacker['id'] > 0:  # Only update database for real Pokemon
+                        attacker['current_hp'], attacker['id']
+                return f"{attacker['name']} created a substitute!"
+        elif move_name in ['teleport', 'whirlwind', 'roar']:
+            return f"{attacker['name']} used {move_name.replace('_', ' ').title()}, but nothing happened!"
+        elif move_name == 'splash':
+            return f"{attacker['name']} splashed around, but nothing happened!"
+        elif move_name == 'disable':
+            defender_data['disabled_move'] = defender.get('last_move_used')
+            defender_data['disable_turns'] = random.randint(1, 8)
+            return f"{defender['name']}'s last move was disabled!"
+        elif move_name == 'focus_energy':
+            attacker_data['focus_energy'] = True
+            return f"{attacker['name']} is getting pumped!"
+        elif move_name == 'conversion':
+                    attacker_data['converted_type'] = move_data['type']
+                    return f"{attacker['name']} changed type to {move_data['type']}!"
+            return f"{attacker['name']} used Conversion, but nothing happened!"
+        elif move_name in ['fissure', 'guillotine', 'horn_drill']:
+            if attacker['level'] >= defender['level']:
+                accuracy = 30 + attacker['level'] - defender['level']
+                    defender['current_hp'] = 0
+                    if defender['id'] > 0:
+                            defender['id']
+                    return f"{defender['name']} was knocked out by a one-hit KO!"
+                    return f"{move_name.replace('_', ' ').title()} missed!"
+                return f"{move_name.replace('_', ' ').title()} failed! The target is too high level!"
+        elif move_name == 'mimic':
+            if defender.get('last_move_used'):
+                attacker_data['mimic_move'] = defender['last_move_used']
+                return f"{attacker['name']} learned {defender['last_move_used'].replace('_', ' ').title()}!"
+            return f"{attacker['name']} used Mimic, but there was no move to copy!"
+        elif move_name in ['double_slap', 'comet_punch', 'fury_attack', 'pin_missile', 'spike_cannon', 'barrage', 'fury_swipes']:
+                defender['current_hp'] = max(0, defender['current_hp'] - hit_damage)
+                if defender['current_hp'] <= 0:
+            if defender['id'] > 0:
+                    defender['current_hp'], defender['id']
+            return f"{attacker['name']} hit {hits} times for {total_damage} total damage!"
+        elif move_name in ['take_down', 'double_edge', 'submission', 'jump_kick', 'high_jump_kick']:
+            defender['current_hp'] = max(0, defender['current_hp'] - damage)
+            recoil_percent = {'take_down': 0.25, 'double_edge': 0.33, 'submission': 0.25, 'jump_kick': 0.5, 'high_jump_kick': 0.5}
+            attacker['current_hp'] = max(0, attacker['current_hp'] - recoil)
+            if defender['id'] > 0:
+                    defender['current_hp'], defender['id']
+            if attacker['id'] > 0:
+                    attacker['current_hp'], attacker['id']
+            return f"{defender['name']} took {damage} damage! {attacker['name']} took {recoil} recoil damage!"
+        defender_species = POKEMON_DATA[defender_pokemon['species_id']]
+        if move['type'].lower() in TYPE_EFFECTIVENESS:
+            if defender_species['type1'].lower() in TYPE_EFFECTIVENESS[move['type'].lower()]:
+                effectiveness *= TYPE_EFFECTIVENESS[move['type'].lower()][defender_species['type1'].lower()]
+            if defender_species.get('type2') and defender_species['type2'].lower() in TYPE_EFFECTIVENESS[move['type'].lower()]:
+                effectiveness *= TYPE_EFFECTIVENESS[move['type'].lower()][defender_species['type2'].lower()]
+        attacker = attacker_data['pokemon']
+        defender = defender_data['pokemon']
+        attacker_species = POKEMON_DATA[attacker['species_id']]
+        defender_species = POKEMON_DATA[defender['species_id']]
+        attack_stat = self._calculate_stat(attacker_species['base_attack'], attacker['attack_iv'], attacker['level'])
+        defense_stat = self._calculate_stat(defender_species['base_defense'], defender['defense_iv'], defender['level']) // 2  # Halved for explosion
+        attack_stat = self._apply_stat_stage(attack_stat, attacker_data['stats']['attack'])
+        defense_stat = self._apply_stat_stage(defense_stat, defender_data['stats']['defense'])
+        damage = ((2 * attacker['level'] + 10) / 250) * (attack_stat / defense_stat) * base_power + 2
+        effectiveness = self._get_type_effectiveness({'type': 'Normal'}, defender)
+        if attacker_species['type1'].lower() == 'normal' or (attacker_species.get('type2') and attacker_species['type2'].lower() == 'normal'):
+        if move_name in ['sonic_boom', 'dragon_rage', 'night_shade', 'seismic_toss', 'super_fang', 'psywave', 'selfdestruct', 'explosion', 'fissure', 'guillotine', 'horn_drill']:
+        if move['power'] == 0:  # Status moves don't deal damage
+        attacker = attacker_data['pokemon']
+        defender = defender_data['pokemon']
+        attacker_species = POKEMON_DATA[attacker['species_id']]
+        defender_species = POKEMON_DATA[defender['species_id']]
+        if move['category'] == 'physical':
+            base_attack = self._calculate_stat(attacker_species['base_attack'], attacker['attack_iv'], attacker['level'])
+            base_defense = self._calculate_stat(defender_species['base_defense'], defender['defense_iv'], defender['level'])
+            attack_stat = self._apply_stat_stage(base_attack, attacker_data['stats']['attack'])
+            defense_stat = self._apply_stat_stage(base_defense, defender_data['stats']['defense'])
+            base_special_att = self._calculate_stat(attacker_species['base_special'], attacker['special_iv'], attacker['level'])
+            base_special_def = self._calculate_stat(defender_species['base_special'], defender['special_iv'], defender['level'])
+            attack_stat = self._apply_stat_stage(base_special_att, attacker_data['stats']['special'])
+            defense_stat = self._apply_stat_stage(base_special_def, defender_data['stats']['special'])
+        damage = ((2 * attacker['level'] + 10) / 250) * (attack_stat / defense_stat) * move['power'] + 2
+        if move['type'].lower() == attacker_species['type1'].lower() or (attacker_species.get('type2') and move['type'].lower() == attacker_species['type2'].lower()):
+        high_crit_moves = ['slash', 'razor_leaf', 'crabhammer', 'karate_chop']
+        if attacker_data.get('status') == 'burn' and move['category'] == 'physical':
+        if pokemon_data.get('status'):
+                'poison': '🟣 PSN', 'burn': '🔥 BRN', 'paralysis': '⚡ PAR',
+                'sleep': '💤 SLP', 'freeze': '🧊 FRZ'
+            status_parts.append(status_icons.get(pokemon_data['status'], pokemon_data['status'].upper()))
+        if pokemon_data.get('confused'):
+        stats = pokemon_data.get('stats', {})
+                sign = '+' if value > 0 else ''
+        if pokemon_data.get('seeded'):
+        if pokemon_data.get('substitute'):
+        if pokemon_data.get('transformed'):
+        if random.randint(1, 100) > effect_data['chance']:
+        defender = defender_data['pokemon']
+        effect = effect_data['effect']
+        if effect == 'paralysis':
+            if defender_data.get('status') is None:
+                defender_data['status'] = 'paralysis'
+                return f"{defender['name']} was paralyzed!"
+        elif effect == 'freeze':
+            if defender_data.get('status') is None:
+                defender_data['status'] = 'freeze'
+                return f"{defender['name']} was frozen!"
+        elif effect == 'burn':
+            if defender_data.get('status') is None:
+                defender_data['status'] = 'burn'
+                return f"{defender['name']} was burned!"
+        elif effect == 'poison':
+            if defender_data.get('status') is None:
+                defender_data['status'] = 'poison'
+                return f"{defender['name']} was poisoned!"
+        elif effect == 'confusion':
+            defender_data['confused'] = True
+            defender_data['confusion_turns'] = random.randint(2, 5)
+            return f"{defender['name']} became confused!"
+        elif effect == 'speed_down':
+            if defender_data['stats']['speed'] > -6:
+                defender_data['stats']['speed'] -= 1
+                return f"{defender['name']}'s Speed fell!"
+        elif effect == 'attack_down':
+            if defender_data['stats']['attack'] > -6:
+                defender_data['stats']['attack'] -= 1
+                return f"{defender['name']}'s Attack fell!"
+        elif effect == 'defense_down':
+            if defender_data['stats']['defense'] > -6:
+                defender_data['stats']['defense'] -= 1
+                return f"{defender['name']}'s Defense fell!"
+        elif effect == 'flinch':
+            return f"{defender['name']} flinched!"
+        base_accuracy = move['accuracy']
+        accuracy_stage = attacker_data['stats'].get('accuracy', 0)
+        evasion_stage = defender_data['stats'].get('evasion', 0)
+            other_user = battle_data['challenger']['id'] if user_id == battle_data['opponent']['id'] else battle_data['opponent']['id']
+                gym_cog = self.bot.get_cog('Gym')
+                player_id = user_id if user_id > 0 else (battle_data['challenger']['id'] if battle_data['challenger']['id'] > 0 else battle_data['opponent']['id'])
+                    if gym_battle['type'] == 'gym':
+                        npc_name = GYM_LEADERS[gym_battle['leader']]['name']
+                    elif gym_battle['type'] == 'elite4':
+                        npc_name = ELITE_FOUR[gym_battle['member']]['name']
+                        npc_name = CHAMPION['blue']['name']
+            await battle_data['channel'].send(embed=embed)
+        species = POKEMON_DATA[pokemon['species_id']]
+        return ((species['base_hp'] + pokemon['hp_iv']) * 2 * pokemon['level'] // 100) + pokemon['level'] + 10
+        player_data = battle_data['challenger'] if battle_data['challenger']['id'] > 0 else battle_data['opponent']
+        player_pokemon = player_data['pokemon']
+        npc_pokemon = npc_data['pokemon']
+            if move['category'] in ['physical', 'special'] and move['power'] > 0:
+                score = move['power']
+                npc_species = POKEMON_DATA[npc_pokemon['species_id']]
+                if (move['type'].lower() == npc_species['type1'].lower() or 
+                    (npc_species.get('type2') and move['type'].lower() == npc_species['type2'].lower())):
+                player_hp_percent = player_pokemon['current_hp'] / self._calculate_max_hp(player_pokemon)
+                if player_hp_percent < 0.3 and move['power'] >= 80:
+                elif player_hp_percent > 0.8 and move['power'] < 60:
+                if move['accuracy'] < 100:
+                    penalty = (100 - move['accuracy']) // 10
+            elif move['category'] == 'status':
+                npc_hp_percent = npc_pokemon['current_hp'] / self._calculate_max_hp(npc_pokemon)
+                if move_name in ['recover', 'rest', 'soft_boiled']:
+                elif move_name in ['swords_dance', 'agility', 'amnesia', 'barrier', 'harden', 'defense_curl', 'growth']:
+                    if npc_hp_percent > 0.6 and not npc_data.get('status'):
+                        stat_boosts = npc_data.get('stats', {})
+                            'swords_dance': 'attack', 'agility': 'speed', 'amnesia': 'special', 
+                            'barrier': 'special', 'harden': 'defense', 'defense_curl': 'defense',
+                            'growth': 'special'
+                        relevant_stat = stat_map.get(move_name, 'attack')
+                elif move_name in ['sleep_powder', 'thunder_wave', 'toxic', 'poison_powder', 'stun_spore', 'hypnosis', 'sing', 'spore']:
+                    if not player_data.get('status'):
+                        if move_name in ['sleep_powder', 'thunder_wave', 'hypnosis', 'spore']:
+                elif move_name in ['confuse_ray', 'supersonic']:
+                    if not player_data.get('confused'):
+                elif move_name in ['growl', 'leer', 'sand_attack', 'smokescreen', 'screech', 'tail_whip']:
+                    player_stats = player_data.get('stats', {})
+                        'growl': 'attack', 'leer': 'defense', 'tail_whip': 'defense',
+                        'sand_attack': 'accuracy', 'smokescreen': 'accuracy',
+                        'screech': 'defense'
+                    relevant_stat = stat_map.get(move_name, 'attack')
+                elif move_name in ['substitute', 'leech_seed', 'light_screen', 'reflect', 'focus_energy']:
+                    if move_name == 'substitute' and npc_hp_percent > 0.5:
+                    elif move_name == 'leech_seed' and not player_data.get('seeded'):
+                    elif move_name in ['light_screen', 'reflect'] and npc_hp_percent > 0.6:
+                    elif move_name == 'focus_energy' and not npc_data.get('focus_energy'):
+            elif move_name in ['dragon_rage', 'sonic_boom', 'night_shade', 'seismic_toss']:
+                if move_name == 'dragon_rage':
+                    score = 40 if player_pokemon['current_hp'] <= 40 else 30
+                elif move_name == 'sonic_boom':
+                    score = 20 if player_pokemon['current_hp'] <= 20 else 15
+                elif move_name in ['night_shade', 'seismic_toss']:
+                    damage = npc_pokemon['level']
+                    score = damage if player_pokemon['current_hp'] <= damage * 1.5 else damage * 0.7
+        npc_id = battle_data['challenger']['id'] if battle_data['challenger']['id'] < 0 else battle_data['opponent']['id']
+        if battle_data['challenger']['id'] < 0:
+            npc_data = battle_data['challenger']
+        elif battle_data['opponent']['id'] < 0:
+            npc_data = battle_data['opponent']
+        npc_pokemon = npc_data['pokemon']
+        if npc_pokemon['current_hp'] <= 0:
+            player_id = battle_data['challenger']['id'] if battle_data['challenger']['id'] > 0 else battle_data['opponent']['id']
+            result = await self.use_move(battle_data, npc_data['id'], chosen_move)
+            await battle_data['channel'].send(result)
+            if npc_id in self.active_battles and battle_data.get('turn'):
+        gym_cog = self.bot.get_cog('Gym')
+            player_id = battle_data['challenger']['id'] if battle_data['challenger']['id'] > 0 else battle_data['opponent']['id']
+        challenger_id = battle_data['challenger']['id']
+        opponent_id = battle_data['opponent']['id']
+        if 'id' in battle_data and challenger_id > 0 and opponent_id > 0:
+                    "UPDATE battles SET status = 'completed' WHERE id = $1",
+                    battle_data['id']
+        elif challenger_id > 0 and opponent_id < 0 and battle_data.get('is_first_completion'):
+            winner_pokemon = battle_data['challenger']['pokemon'] if winner_id == challenger_id else battle_data['opponent']['pokemon']
+            loser_pokemon = battle_data['opponent']['pokemon'] if winner_id == challenger_id else battle_data['challenger']['pokemon']
+            exp_gained = (loser_pokemon['level'] * 50) // winner_pokemon['level']
+            money_gained = loser_pokemon['level'] * 100
+            if winner_pokemon['id'] > 0:
+                new_exp = winner_pokemon['experience'] + exp_gained
+                    new_exp, winner_pokemon['id']
+            await battle_data['channel'].send(embed=embed)
+        battle_cog = self.bot.get_cog('Battle')
+        pokemon = self.battle_data['challenger']['pokemon'] if self.user_id == self.battle_data['challenger']['id'] else self.battle_data['opponent']['pokemon']
+                button = discord.ui.Button(label=move.replace('_', ' ').title(), custom_id=f"move_{i}")
+        user_data = self.battle_data['challenger'] if self.user_id == self.battle_data['challenger']['id'] else self.battle_data['opponent']
+        available_pokemon = [p for p in user_data['party'] if p['current_hp'] > 0 and p['id'] != user_data['pokemon']['id']]
+            battle_cog = self.bot.get_cog('Battle')
+            if self.user_id in battle_cog.active_battles and self.battle_data.get('turn') is not None:
+        user_data = battle_data['challenger'] if user_id == battle_data['challenger']['id'] else battle_data['opponent']
+        for i, pokemon in enumerate(user_data['party']):
+            if pokemon['current_hp'] > 0 and pokemon['id'] != user_data['pokemon']['id']:
+                species = COMPLETE_POKEMON_DATA[pokemon['species_id']]
+                    label=f"{species['name']} (Lv.{pokemon['level']})",
+            user_data = self.battle_data['challenger'] if self.user_id == self.battle_data['challenger']['id'] else self.battle_data['opponent']
+            user_data['pokemon'] = dict(user_data['party'][pokemon_index])
+            user_data['current_index'] = pokemon_index
+            species = COMPLETE_POKEMON_DATA[user_data['pokemon']['species_id']]
+                await interaction.response.send_message(f"Go, {species['name']}!")
+                battle_cog = self.bot.get_cog('Battle')
+                other_user_id = self.battle_data['opponent']['id'] if self.user_id == self.battle_data['challenger']['id'] else self.battle_data['challenger']['id']
+                self.battle_data['turn'] = other_user_id
+                await interaction.response.send_message(f"Switched to {species['name']}!")
+                battle_cog = self.bot.get_cog('Battle')

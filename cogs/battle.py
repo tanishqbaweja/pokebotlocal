@@ -211,7 +211,9 @@ class Battle(commands.Cog):
         attacker_pokemon = attacker_data['pokemon']
         known_moves = [attacker_pokemon.get('move1'), attacker_pokemon.get('move2'), 
                       attacker_pokemon.get('move3'), attacker_pokemon.get('move4')]
-        if move_name not in known_moves:
+        # Convert known moves to underscore format for comparison
+        known_moves_converted = [move.lower().replace(' ', '_').replace('-', '_') if move else None for move in known_moves]
+        if move_name not in known_moves_converted:
             return f"{attacker_pokemon['name']} doesn't know {move_name.replace('_', ' ').title()}!"
             
         # Check if Pokemon can move (status effects)
@@ -1243,7 +1245,8 @@ class Battle(commands.Cog):
             
         # Choose move for NPC using strategic AI
         moves = [npc_pokemon.get('move1'), npc_pokemon.get('move2'), npc_pokemon.get('move3'), npc_pokemon.get('move4')]
-        valid_moves = [m for m in moves if m and m in MOVES_DATA]
+        # Convert moves to underscore format
+        valid_moves = [m.lower().replace(' ', '_').replace('-', '_') for m in moves if m and m.lower().replace(' ', '_').replace('-', '_') in MOVES_DATA]
         
         if valid_moves:
             chosen_move = self._choose_strategic_move(npc_data, battle_data, valid_moves)
@@ -1400,8 +1403,10 @@ class BattleMoveView(discord.ui.View):
         
         for i, move in enumerate(moves):
             if move:
+                # Convert move to underscore format for internal use
+                move_internal = move.lower().replace(' ', '_').replace('-', '_')
                 button = discord.ui.Button(label=move.replace('_', ' ').title(), custom_id=f"move_{i}")
-                button.callback = self._create_move_callback(move)
+                button.callback = self._create_move_callback(move_internal)
                 self.add_item(button)
                 
         # Add switch Pokemon button if user has more than 1 Pokemon
