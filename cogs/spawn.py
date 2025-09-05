@@ -309,7 +309,6 @@ class Spawn(commands.Cog):
                 description=f"You caught the {shiny_text}**{pokemon_data['name']}**!",
                 color=0x00ff00
             )
-            embed.add_field(name="Pokemon ID", value=f"#{pokemon_id}", inline=True)
             embed.add_field(name="Level", value=spawn_data['level'], inline=True)
             
             await ctx.send(embed=embed)

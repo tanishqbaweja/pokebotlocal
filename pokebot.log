@@ -4188,3 +4188,8 @@ Traceback (most recent call last):
   File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\webhook\async_.py", line 226, in request
     raise HTTPException(response, data)
 discord.errors.HTTPException: 400 Bad Request (error code: 50006): Cannot send an empty message
+2025-09-05 11:47:16,070 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-05 11:47:16,071 - discord.client - INFO - logging in using static token
+2025-09-05 11:47:18,809 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: dca99298682cc93107ce30c1cd27e5a4).
+2025-09-05 11:47:20,838 - root - INFO - Professor Byte#9223 has connected to Discord!
+2025-09-05 11:47:21,867 - root - INFO - Slash commands synced!
