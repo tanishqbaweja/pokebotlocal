@@ -175,54 +175,7 @@ class Spawn(commands.Cog):
             import logging
             logging.error(f"Failed to send spawn message: {e}")
     
-    async def spawn_pokemon_admin(self, channel, guild_id, species_id, level, is_shiny):
-        """Admin spawn using same logic as normal spawn"""
-        try:
-            if species_id not in POKEMON_DATA:
-                raise ValueError(f"Invalid species ID: {species_id}")
-            pokemon_data = POKEMON_DATA[species_id]
-        except (KeyError, ValueError) as e:
-            raise ValueError(f"Invalid Pokemon species ID: {species_id}") from e
-        
-        # Create spawn embed (same as normal spawn)
-        embed = discord.Embed(
-            title="A wild Pokemon appeared!",
-            description=f"A wild **{pokemon_data['name']}** (Level {level}) appeared!",
-            color=0xffd700 if is_shiny else 0x3498db
-        )
-        
-        if is_shiny:
-            embed.description += " ✨ **It's shiny!** ✨"
-            
-        embed.add_field(name="Type", value=f"{pokemon_data['type1']}" + (f"/{pokemon_data['type2']}" if pokemon_data['type2'] else ""), inline=True)
-        embed.add_field(name="Rarity", value=pokemon_data['rarity'].title(), inline=True)
-        embed.add_field(name="Catch", value="Use `/catch` to attempt capture!", inline=False)
-        
-        # Try to add Pokemon sprite (same as normal spawn)
-        sprite_cog = self.bot.get_cog('SpriteSystem')
-        files = []
-        if sprite_cog:
-            sprite_data = await sprite_cog.get_pokemon_sprite(species_id, is_shiny)
-            if sprite_data:
-                with BytesIO(sprite_data) as sprite_buffer:
-                    file = discord.File(sprite_buffer, filename=f"{pokemon_data['name'].lower()}.png")
-                    embed.set_image(url=f"attachment://{pokemon_data['name'].lower()}.png")
-                    files.append(file)
-        
-        spawn_message = await channel.send(embed=embed, files=files)
-        
-        # Store active spawn (same as normal spawn)
-        if guild_id not in self.active_spawns:
-            self.active_spawns[guild_id] = {}
-        
-        spawn_id = f"{species_id}_{level}_{is_shiny}"
-        self.active_spawns[guild_id][spawn_id] = {
-            'species_id': species_id,
-            'level': level,
-            'is_shiny': is_shiny,
-            'caught_by': set(),
-            'channels': {channel.id: spawn_message}
-        }
+
         
     @commands.hybrid_command(name="catch", description="Attempt to catch the spawned Pokemon")
     @app_commands.describe(pokeball="Choose a pokeball type")
