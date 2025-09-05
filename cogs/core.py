@@ -99,6 +99,13 @@ class Core(commands.Cog):
             
         embed = discord.Embed(title="Your Party", color=0xe74c3c)
         
+        # Fix party positions if needed
+        pokemon_cog = self.bot.get_cog('Pokemon')
+        if pokemon_cog:
+            await pokemon_cog._reorder_party(user_id)
+            # Refresh party data after reordering
+            party = await self.bot.db.get_user_pokemon(user_id, in_party=True)
+        
         for i, pokemon in enumerate(party, 1):
             type_str = pokemon['type1']
             if pokemon['type2']:
