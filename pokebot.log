@@ -4408,3 +4408,8 @@ aiohttp.client_exceptions.ClientConnectorDNSError: Cannot connect to host gatewa
 2025-09-06 07:44:37,916 - root - ERROR - Failed to send spawn message: 403 Forbidden (error code: 50001): Missing Access
 2025-09-06 07:44:38,419 - root - ERROR - Failed to send spawn message: 403 Forbidden (error code: 50001): Missing Access
 2025-09-06 07:44:38,812 - root - ERROR - Failed to send spawn message: 403 Forbidden (error code: 50001): Missing Access
+2025-09-06 08:12:10,226 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-06 08:12:10,228 - discord.client - INFO - logging in using static token
+2025-09-06 08:12:12,354 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: a7a7220a9b656d13f233d75264754f20).
+2025-09-06 08:12:14,524 - root - INFO - Professor Byte#9223 has connected to Discord!
+2025-09-06 08:12:15,095 - root - INFO - Slash commands synced!
