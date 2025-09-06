@@ -16,37 +16,19 @@ class Spawn(commands.Cog):
         if not message.guild:
             return
             
-        # Get config and parse channels
+        # Get config
         config = await self.bot.db.fetchrow(
             "SELECT * FROM server_config WHERE guild_id = $1", message.guild.id
         )
         
-        if not config or not config['spawn_channels']:
-            return
-            
-        # Parse combined channel data
-        all_channels = config.get('spawn_channels', [])
-        if -1 in all_channels:
-            separator_index = all_channels.index(-1)
-            monitor_channels = all_channels[:separator_index]
-            spawn_channels = all_channels[separator_index + 1:]
+        # If no config, spawn in all channels
+        if not config:
+            spawn_channels = [message.channel.id]
         else:
-            # Fallback to old format
-            monitor_channels = all_channels
-            spawn_channels = all_channels
-            
-        # Check if message is in monitor channel
-        if message.channel.id not in monitor_channels:
-            return
-            
-        # Select spawn channel
-        if spawn_channels:
-            spawn_channel = message.guild.get_channel(random.choice(spawn_channels))
-        else:
-            spawn_channel = message.channel
-            
-        if not spawn_channel:
-            spawn_channel = message.channel
+            spawn_channels = config.get('spawn_channels', [])
+            # If no spawn channels configured, spawn in all channels
+            if not spawn_channels:
+                spawn_channels = [message.channel.id]
             
         # XP and money are handled by the Experience cog
         
@@ -314,61 +296,44 @@ class Spawn(commands.Cog):
             
             await ctx.send(f"The {pokemon_data['name']} broke free! Try again with another pokeball.")
             
-    @app_commands.command(name="setspawn", description="Set spawn and message channels (Admin only)")
+    @app_commands.command(name="setspawn", description="Set spawn channels (Admin only)")
     @app_commands.describe(
-        monitor1="First channel to monitor for messages", monitor2="Second monitor channel (optional)", monitor3="Third monitor channel (optional)",
-        monitor4="Fourth monitor channel (optional)", monitor5="Fifth monitor channel (optional)", monitor6="Sixth monitor channel (optional)",
-        monitor7="Seventh monitor channel (optional)", monitor8="Eighth monitor channel (optional)", monitor9="Ninth monitor channel (optional)", monitor10="Tenth monitor channel (optional)",
         spawn1="First channel where Pokemon spawn", spawn2="Second spawn channel (optional)", spawn3="Third spawn channel (optional)",
         spawn4="Fourth spawn channel (optional)", spawn5="Fifth spawn channel (optional)", spawn6="Sixth spawn channel (optional)",
         spawn7="Seventh spawn channel (optional)", spawn8="Eighth spawn channel (optional)", spawn9="Ninth spawn channel (optional)", spawn10="Tenth spawn channel (optional)"
     )
     async def setspawn(self, interaction: discord.Interaction, 
-                      monitor1: discord.TextChannel, spawn1: discord.TextChannel,
-                      monitor2: discord.TextChannel = None, spawn2: discord.TextChannel = None,
-                      monitor3: discord.TextChannel = None, spawn3: discord.TextChannel = None,
-                      monitor4: discord.TextChannel = None, spawn4: discord.TextChannel = None,
-                      monitor5: discord.TextChannel = None, spawn5: discord.TextChannel = None,
-                      monitor6: discord.TextChannel = None, spawn6: discord.TextChannel = None,
-                      monitor7: discord.TextChannel = None, spawn7: discord.TextChannel = None,
-                      monitor8: discord.TextChannel = None, spawn8: discord.TextChannel = None,
-                      monitor9: discord.TextChannel = None, spawn9: discord.TextChannel = None,
-                      monitor10: discord.TextChannel = None, spawn10: discord.TextChannel = None):
+                      spawn1: discord.TextChannel,
+                      spawn2: discord.TextChannel = None, spawn3: discord.TextChannel = None,
+                      spawn4: discord.TextChannel = None, spawn5: discord.TextChannel = None,
+                      spawn6: discord.TextChannel = None, spawn7: discord.TextChannel = None,
+                      spawn8: discord.TextChannel = None, spawn9: discord.TextChannel = None,
+                      spawn10: discord.TextChannel = None):
         if not (interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild or interaction.user.guild_permissions.moderate_members or interaction.user.id == 408190648924110858):
             await interaction.response.send_message("This command requires Administrator, Manage Server, or Moderate Members permissions!", ephemeral=True)
             return
             
-        monitor_channels = [monitor1]
         spawn_channels = [spawn1]
         
-        for monitor in [monitor2, monitor3, monitor4, monitor5, monitor6, monitor7, monitor8, monitor9, monitor10]:
-            if monitor:
-                monitor_channels.append(monitor)
         for spawn in [spawn2, spawn3, spawn4, spawn5, spawn6, spawn7, spawn8, spawn9, spawn10]:
             if spawn:
                 spawn_channels.append(spawn)
             
-        monitor_ids = [channel.id for channel in monitor_channels]
         spawn_ids = [channel.id for channel in spawn_channels]
-        
-        # Store both monitor and spawn channels in spawn_channels field with separator
-        # Format: [monitor_ids]|[spawn_ids]
-        combined_data = monitor_ids + [-1] + spawn_ids  # Use -1 as separator
         
         try:
             await self.bot.db.execute(
                 """INSERT INTO server_config (guild_id, spawn_channels, message_count, messages_until_spawn)
                    VALUES ($1, $2, 0, $3)
                    ON CONFLICT (guild_id) DO UPDATE SET spawn_channels = $2""",
-                interaction.guild.id, combined_data, random.randint(10, 20)
+                interaction.guild.id, spawn_ids, random.randint(10, 20)
             )
         except Exception as e:
             await interaction.response.send_message("Database error occurred while updating spawn configuration!", ephemeral=True)
             return
         
-        monitor_mentions = ", ".join([channel.mention for channel in monitor_channels])
         spawn_mentions = ", ".join([channel.mention for channel in spawn_channels])
-        await interaction.response.send_message(f"Monitor channels: {monitor_mentions}\nSpawn channels: {spawn_mentions}")
+        await interaction.response.send_message(f"Pokemon will spawn in: {spawn_mentions}\nMonitoring all server channels for messages.")
 
 async def setup(bot):
     await bot.add_cog(Spawn(bot))

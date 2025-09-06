@@ -45,13 +45,8 @@ class Admin(commands.Cog):
             await interaction.followup.send("No spawn channels configured! Use /setspawn first.", ephemeral=True)
             return
             
-        # Parse spawn channels
-        all_channels = config.get('spawn_channels', [])
-        if -1 in all_channels:
-            separator_index = all_channels.index(-1)
-            spawn_channels = all_channels[separator_index + 1:]
-        else:
-            spawn_channels = all_channels
+        # Get spawn channels directly
+        spawn_channels = config.get('spawn_channels', [])
             
         # Use the same spawn system
         spawn_cog = self.bot.get_cog('Spawn')
