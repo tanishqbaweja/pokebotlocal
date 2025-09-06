@@ -134,8 +134,10 @@ class Spawn(commands.Cog):
             sprite_data = await sprite_cog.get_pokemon_sprite(species_id, is_shiny)
             if sprite_data:
                 with BytesIO(sprite_data) as sprite_buffer:
-                    file = discord.File(sprite_buffer, filename=f"{pokemon_data['name'].lower()}.png")
-                    embed.set_image(url=f"attachment://{pokemon_data['name'].lower()}.png")
+                    # Clean filename by removing special characters
+                    clean_name = pokemon_data['name'].lower().replace('♀', '_f').replace('♂', '_m').replace(' ', '_').replace('.', '').replace("'", '')
+                    file = discord.File(sprite_buffer, filename=f"{clean_name}.png")
+                    embed.set_image(url=f"attachment://{clean_name}.png")
                     files.append(file)
         
         try:
