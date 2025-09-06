@@ -23,10 +23,17 @@ class Admin(commands.Cog):
             await interaction.response.send_message("This command can only be used in servers!", ephemeral=True)
             return
             
-        # Find Pokemon by name
+        # Find Pokemon by name (support both original and cleaned names)
         species_id = None
+        pokemon_lower = pokemon.lower()
         for pid, data in POKEMON_DATA.items():
-            if data['name'].lower() == pokemon.lower():
+            # Check original name
+            if data['name'].lower() == pokemon_lower:
+                species_id = pid
+                break
+            # Check cleaned name (for special characters)
+            clean_name = data['name'].lower().replace('♀', '_f').replace('♂', '_m').replace(' ', '_').replace('.', '').replace("'", '')
+            if clean_name == pokemon_lower:
                 species_id = pid
                 break
                 
