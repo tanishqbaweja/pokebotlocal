@@ -79,18 +79,16 @@ class Database:
         in_party = party_count < 6
         party_position = party_count + 1 if in_party else None
         
-        # Get appropriate moves for the Pokemon's level
-        moves = self._get_moves_for_level(species_id, level)
-        
-        return await self.fetchval(
+        # Create Pokemon with no moves initially
+        pokemon_id = await self.fetchval(
             """INSERT INTO pokemon (owner_id, species_id, level, hp_iv, attack_iv, 
-               defense_iv, special_iv, speed_iv, current_hp, is_shiny, in_party, party_position,
-               move1, move2, move3, move4)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id""",
+               defense_iv, special_iv, speed_iv, current_hp, is_shiny, in_party, party_position)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id""",
             owner_id, species_id, level, ivs['hp'], ivs['attack'], ivs['defense'],
-            ivs['special'], ivs['speed'], hp, is_shiny, in_party, party_position,
-            moves[0], moves[1], moves[2], moves[3]
+            ivs['special'], ivs['speed'], hp, is_shiny, in_party, party_position
         )
+        
+        return pokemon_id
         
     def _get_moves_for_level(self, species_id, level):
         """Get appropriate moves for a Pokemon at a specific level"""
