@@ -15,6 +15,46 @@ class MoveLearning(commands.Cog):
                 self.levelup_moves = json.load(f)
         except FileNotFoundError:
             self.levelup_moves = {}
+    
+    async def initialize_pokemon_moves(self, pokemon_id, species_id, level):
+        """Initialize moves for newly created Pokemon based on their level"""
+        from data.complete_pokemon_data import COMPLETE_POKEMON_DATA
+        species_data = COMPLETE_POKEMON_DATA.get(species_id)
+        if not species_data:
+            return
+            
+        species_name = species_data['name']
+        if species_name not in self.levelup_moves:
+            return
+            
+        # Get all moves the Pokemon should know at this level
+        moves_to_know = []
+        for check_level in range(1, level + 1):
+            level_str = str(check_level)
+            if level_str in self.levelup_moves[species_name]:
+                raw_moves = self.levelup_moves[species_name][level_str]
+                if isinstance(raw_moves, list):
+                    for move in raw_moves:
+                        converted_move = self._convert_move_name(move)
+                        if converted_move not in moves_to_know:
+                            moves_to_know.append(converted_move)
+                else:
+                    converted_move = self._convert_move_name(raw_moves)
+                    if converted_move not in moves_to_know:
+                        moves_to_know.append(converted_move)
+        
+        # Take the last 4 moves (most recent)
+        final_moves = moves_to_know[-4:] if len(moves_to_know) > 4 else moves_to_know
+        
+        # Update Pokemon with these moves
+        move_updates = {}
+        for i, move in enumerate(final_moves, 1):
+            move_updates[f'move{i}'] = move
+            
+        if move_updates:
+            set_clause = ', '.join([f"{col} = ${i+2}" for i, col in enumerate(move_updates.keys())])
+            values = [pokemon_id] + list(move_updates.values())
+            await self.bot.db.execute(f"UPDATE pokemon SET {set_clause} WHERE id = $1", *values)
             
     @commands.Cog.listener()
     async def on_pokemon_level_up(self, pokemon_id, old_level, new_level):
@@ -38,7 +78,6 @@ class MoveLearning(commands.Cog):
             level_str = str(level)
             if level_str in self.levelup_moves[species_name]:
                 raw_moves = self.levelup_moves[species_name][level_str]
-                # Convert move names to proper format
                 if isinstance(raw_moves, list):
                     converted_moves = [self._convert_move_name(move) for move in raw_moves]
                     moves_to_learn.extend(converted_moves)
@@ -59,9 +98,6 @@ class MoveLearning(commands.Cog):
             if len(current_moves) < 4:
                 # Learn move automatically
                 slot = len(current_moves) + 1
-                if slot not in [1, 2, 3, 4]:
-                    continue
-                    
                 column_map = {1: 'move1', 2: 'move2', 3: 'move3', 4: 'move4'}
                 await self.bot.db.execute(
                     f"UPDATE pokemon SET {column_map[slot]} = $1 WHERE id = $2",
@@ -88,6 +124,7 @@ class MoveLearning(commands.Cog):
                 
                 # Show move choice immediately
                 await self._show_move_choice(pokemon['owner_id'])
+                break  # Only handle one move at a time
                     
     async def _show_move_choice(self, user_id):
         """Show move choice interface to user"""
@@ -102,25 +139,37 @@ class MoveLearning(commands.Cog):
                 return
                 
             embed = discord.Embed(
-                title="Move Learning Choice",
+                title="🎓 Move Learning Choice",
                 description=f"Your **{pending['species_name']}** wants to learn **{pending['new_move'].replace('_', ' ').title()}**, but already knows 4 moves!\n\nChoose one move to forget:",
                 color=0xffa500
             )
             
-            view = MoveChoiceView(self.bot.db, user_id, pending)
+            view = MoveChoiceView(self.bot, user_id, pending)
             await user_obj.send(embed=embed, view=view)
-        except:
-            pass
+        except Exception as e:
+            print(f"Error showing move choice: {e}")
             
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        """Show move choice on every command until resolved"""
-        if message.author.bot:
+    @commands.hybrid_command(name="choosemove", description="Choose which move to replace when learning a new move")
+    async def choose_move_command(self, ctx):
+        user_id = ctx.author.id
+        if user_id not in self.pending_moves:
+            await ctx.send("You don't have any pending move learning decisions.", ephemeral=True)
             return
             
-        user_id = message.author.id
-        if user_id in self.pending_moves and message.content.startswith('/'):
-            await self._show_move_choice(user_id)
+        await self._show_move_choice(user_id)
+        await ctx.send("Move choice sent to your DMs!", ephemeral=True)
+        
+    @commands.hybrid_command(name="forgetmove", description="Skip learning the new move")
+    async def forget_move_command(self, ctx):
+        user_id = ctx.author.id
+        if user_id not in self.pending_moves:
+            await ctx.send("You don't have any pending move learning decisions.", ephemeral=True)
+            return
+            
+        pending = self.pending_moves[user_id]
+        del self.pending_moves[user_id]
+        
+        await ctx.send(f"Your **{pending['species_name']}** did not learn **{pending['new_move'].replace('_', ' ').title()}**.", ephemeral=True)
         
     def has_pending_moves(self, user_id):
         return user_id in self.pending_moves
@@ -224,9 +273,9 @@ class MoveLearning(commands.Cog):
         return converted
 
 class MoveChoiceView(discord.ui.View):
-    def __init__(self, db, user_id, pending):
-        super().__init__(timeout=None)
-        self.db = db
+    def __init__(self, bot, user_id, pending):
+        super().__init__(timeout=300)  # 5 minute timeout
+        self.bot = bot
         self.user_id = user_id
         self.pending = pending
         
@@ -262,18 +311,18 @@ class MoveChoiceView(discord.ui.View):
                 return
                 
             column_map = {1: 'move1', 2: 'move2', 3: 'move3', 4: 'move4'}
-            await self.db.execute(
+            await self.bot.db.execute(
                 f"UPDATE pokemon SET {column_map[move_slot]} = $1 WHERE id = $2",
                 self.pending['new_move'], self.pending['pokemon_id']
             )
             
             # Remove from pending
-            move_learning_cog = interaction.client.get_cog('MoveLearning')
+            move_learning_cog = self.bot.get_cog('MoveLearning')
             if move_learning_cog and self.user_id in move_learning_cog.pending_moves:
                 del move_learning_cog.pending_moves[self.user_id]
             
             embed = discord.Embed(
-                title="Move Learned!",
+                title="🎓 Move Learned!",
                 description=f"Your {self.pending['species_name']} forgot **{old_move.replace('_', ' ').title()}** and learned **{self.pending['new_move'].replace('_', ' ').title()}**!",
                 color=0x00ff00
             )
@@ -289,7 +338,7 @@ class MoveChoiceView(discord.ui.View):
             return
             
         # Remove from pending
-        move_learning_cog = interaction.client.get_cog('MoveLearning')
+        move_learning_cog = self.bot.get_cog('MoveLearning')
         if move_learning_cog and self.user_id in move_learning_cog.pending_moves:
             del move_learning_cog.pending_moves[self.user_id]
         
@@ -301,6 +350,11 @@ class MoveChoiceView(discord.ui.View):
         
         self.clear_items()
         await interaction.response.edit_message(embed=embed, view=self)
+        
+    async def on_timeout(self):
+        # Clear buttons when timeout occurs
+        self.clear_items()
+        # Note: Can't edit message here as we don't have message reference
 
 async def setup(bot):
     await bot.add_cog(MoveLearning(bot))

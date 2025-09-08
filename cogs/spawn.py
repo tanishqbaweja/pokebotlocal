@@ -270,6 +270,11 @@ class Spawn(commands.Cog):
                 await ctx.send("You've reached the maximum Pokemon limit (999)! Cannot catch more Pokemon.")
                 return
             
+            # Initialize moves for the caught Pokemon
+            move_learning_cog = self.bot.get_cog('MoveLearning')
+            if move_learning_cog:
+                await move_learning_cog.initialize_pokemon_moves(pokemon_id, spawn_data['species_id'], spawn_data['level'])
+            
             # Remove pokeball from inventory
             await self.bot.db.execute(
                 "UPDATE user_inventory SET quantity = quantity - 1 WHERE user_id = $1 AND item_name = $2",
