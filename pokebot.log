@@ -7789,3 +7789,344 @@ Traceback (most recent call last):
     raise RuntimeError('Task is already launched and is not completed.')
 RuntimeError: Task is already launched and is not completed.
 2025-09-12 00:14:59,653 - root - INFO - Slash commands synced!
+2025-09-12 00:15:34,370 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-12 00:15:34,371 - discord.client - INFO - logging in using static token
+2025-09-12 00:15:36,549 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: c4e62c351bd07c6056c48f4444a86d37).
+2025-09-12 00:15:38,579 - root - INFO - Professor Byte#9223 has connected to Discord!
+2025-09-12 00:15:39,144 - root - INFO - Slash commands synced!
+2025-09-12 01:58:23,778 - discord.client - ERROR - Attempting a reconnect in 1.68s
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1532, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1148, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1179, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\resolver.py", line 40, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 868, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\socket.py", line 962, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 11004] getaddrinfo failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\client.py", line 724, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\tasks.py", line 489, in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\gateway.py", line 383, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\http.py", line 566, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 1067, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 770, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 725, in _connect_and_send_request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 642, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1209, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1538, in _create_direct_connection
+    raise ClientConnectorDNSError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorDNSError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [getaddrinfo failed]
+2025-09-12 01:58:26,288 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 02:09:38,612 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 02:36:42,399 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 02:47:24,481 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 02:52:36,328 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 03:41:45,647 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 04:59:56,209 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 07:39:53,245 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 08:22:52,052 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 08:29:24,375 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 08:51:03,727 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 09:46:51,851 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 10:36:37,170 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 10:40:02,995 - discord.client - ERROR - Attempting a reconnect in 0.26s
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1268, in _wrap_create_connection
+    sock = await aiohappyeyeballs.start_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohappyeyeballs\impl.py", line 122, in start_connection
+    raise first_exception
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohappyeyeballs\impl.py", line 73, in start_connection
+    sock = await _connect_sock(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohappyeyeballs\impl.py", line 208, in _connect_sock
+    await loop.sock_connect(sock, address)
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 726, in sock_connect
+    return await self._proactor.connect(sock, address)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\windows_events.py", line 854, in _poll
+    value = callback(transferred, key, ov)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\windows_events.py", line 641, in finish_connect
+    ov.getresult()
+PermissionError: [WinError 5] Access is denied
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\client.py", line 724, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\tasks.py", line 489, in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\gateway.py", line 383, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\http.py", line 566, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 1067, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 770, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 725, in _connect_and_send_request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 642, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1209, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1581, in _create_direct_connection
+    raise last_exc
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1550, in _create_direct_connection
+    transp, proto = await self._wrap_create_connection(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1291, in _wrap_create_connection
+    raise client_error(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [Access is denied]
+2025-09-12 10:40:03,288 - discord.client - ERROR - Attempting a reconnect in 2.83s
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1268, in _wrap_create_connection
+    sock = await aiohappyeyeballs.start_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohappyeyeballs\impl.py", line 122, in start_connection
+    raise first_exception
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohappyeyeballs\impl.py", line 73, in start_connection
+    sock = await _connect_sock(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohappyeyeballs\impl.py", line 208, in _connect_sock
+    await loop.sock_connect(sock, address)
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 726, in sock_connect
+    return await self._proactor.connect(sock, address)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\windows_events.py", line 854, in _poll
+    value = callback(transferred, key, ov)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\windows_events.py", line 641, in finish_connect
+    ov.getresult()
+PermissionError: [WinError 5] Access is denied
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\client.py", line 724, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\tasks.py", line 489, in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\gateway.py", line 383, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\http.py", line 566, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 1067, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 770, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 725, in _connect_and_send_request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 642, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1209, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1581, in _create_direct_connection
+    raise last_exc
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1550, in _create_direct_connection
+    transp, proto = await self._wrap_create_connection(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1291, in _wrap_create_connection
+    raise client_error(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [Access is denied]
+2025-09-12 10:40:06,131 - discord.client - ERROR - Attempting a reconnect in 7.88s
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1268, in _wrap_create_connection
+    sock = await aiohappyeyeballs.start_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohappyeyeballs\impl.py", line 122, in start_connection
+    raise first_exception
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohappyeyeballs\impl.py", line 73, in start_connection
+    sock = await _connect_sock(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohappyeyeballs\impl.py", line 208, in _connect_sock
+    await loop.sock_connect(sock, address)
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\proactor_events.py", line 726, in sock_connect
+    return await self._proactor.connect(sock, address)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\windows_events.py", line 854, in _poll
+    value = callback(transferred, key, ov)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\windows_events.py", line 641, in finish_connect
+    ov.getresult()
+PermissionError: [WinError 5] Access is denied
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\client.py", line 724, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\tasks.py", line 489, in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\gateway.py", line 383, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\http.py", line 566, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 1067, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 770, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 725, in _connect_and_send_request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 642, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1209, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1581, in _create_direct_connection
+    raise last_exc
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1550, in _create_direct_connection
+    transp, proto = await self._wrap_create_connection(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1291, in _wrap_create_connection
+    raise client_error(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [Access is denied]
+2025-09-12 10:40:14,797 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 11:13:50,832 - discord.client - ERROR - Attempting a reconnect in 4.04s
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1532, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1148, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1179, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\resolver.py", line 40, in resolve
+    infos = await self._loop.getaddrinfo(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 868, in getaddrinfo
+    return await self.run_in_executor(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\socket.py", line 962, in getaddrinfo
+    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+socket.gaierror: [Errno 11004] getaddrinfo failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\client.py", line 724, in connect
+    self.ws = await asyncio.wait_for(coro, timeout=60.0)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\slato\AppData\Local\Programs\Python\Python311\Lib\asyncio\tasks.py", line 489, in wait_for
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\gateway.py", line 383, in from_client
+    socket = await client.http.ws_connect(str(url))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\http.py", line 566, in ws_connect
+    return await self.__session.ws_connect(url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 1067, in _ws_connect
+    resp = await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 770, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\client.py", line 725, in _connect_and_send_request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 642, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1209, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\aiohttp\connector.py", line 1538, in _create_direct_connection
+    raise ClientConnectorDNSError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorDNSError: Cannot connect to host gateway-us-east1-b.discord.gg:443 ssl:default [getaddrinfo failed]
+2025-09-12 11:13:55,584 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 13:22:08,061 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 15:14:14,731 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 16:43:58,950 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 17:02:46,435 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 17:17:03,657 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 20:28:51,221 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 22:16:20,675 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c4e62c351bd07c6056c48f4444a86d37.
+2025-09-12 22:31:47,507 - root - ERROR - Unexpected error in catch: Hybrid command raised an error: Command 'catch' raised an exception: NotFound: 404 Not Found (error code: 10062): Unknown interaction
+2025-09-12 22:31:47,508 - root - ERROR - NoneType: None
+
+2025-09-12 22:31:59,503 - discord.client - ERROR - Ignoring exception in on_command_error
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\client.py", line 504, in _run_event
+    await coro(*args, **kwargs)
+  File "H:\Github Repositories\pokebot\cogs\error_handler.py", line 56, in on_command_error
+    await ctx.send("An unexpected error occurred. Please try again later.")
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\ext\commands\context.py", line 1140, in send
+    response = await self.interaction.response.send_message(**kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\interactions.py", line 1051, in send_message
+    response = await adapter.create_interaction_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\webhook\async_.py", line 224, in request
+    raise NotFound(response, data)
+discord.errors.NotFound: 404 Not Found (error code: 10062): Unknown interaction
