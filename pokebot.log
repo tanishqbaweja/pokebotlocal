@@ -8130,3 +8130,31 @@ Traceback (most recent call last):
   File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\webhook\async_.py", line 224, in request
     raise NotFound(response, data)
 discord.errors.NotFound: 404 Not Found (error code: 10062): Unknown interaction
+2025-09-23 02:41:35,280 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-09-23 02:41:35,280 - discord.client - INFO - logging in using static token
+2025-09-23 02:41:37,465 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 3a32864410512f5429f7ced3dd100b7d).
+2025-09-23 02:41:39,489 - root - INFO - Professor Byte#9223 has connected to Discord!
+2025-09-23 02:41:40,152 - root - INFO - Slash commands synced!
+2025-09-23 02:42:04,123 - discord.client - ERROR - Ignoring exception in on_message
+Traceback (most recent call last):
+  File "H:\Github Repositories\pokebot\venv\Lib\site-packages\discord\client.py", line 504, in _run_event
+    await coro(*args, **kwargs)
+  File "H:\Github Repositories\pokebot\cogs\spawn.py", line 36, in on_message
+    new_count = config['message_count'] + 1
+                ~~~~~~^^^^^^^^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+2025-09-23 04:01:00,106 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 05:48:12,364 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 08:42:16,725 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 10:05:06,736 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 13:02:57,694 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 14:13:54,761 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 14:30:55,047 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 16:51:53,300 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 18:56:32,425 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 19:49:57,918 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 21:04:12,903 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 21:18:19,109 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-23 23:21:03,836 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-24 02:15:19,077 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
+2025-09-24 02:20:51,607 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 3a32864410512f5429f7ced3dd100b7d.
